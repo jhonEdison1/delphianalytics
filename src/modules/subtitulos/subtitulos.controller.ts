@@ -21,8 +21,12 @@ export class SubtitulosController {
   async subirArchivo(@UploadedFile() archivo:  Express.Multer.File) {
     // Procesar el archivo y enviarlo al servicio de Ficha
     const fileBuffer = archivo.buffer;
-    return await this.subtitulosService.procesarArchivo(fileBuffer);
-   
+    return await this.subtitulosService.procesarArchivo(fileBuffer);   
+  }
+
+  @Get('/findAll')
+  async findAll() {
+    return await this.subtitulosService.findAll();
   }
 
  

@@ -1,6 +1,18 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Programa } from "src/modules/programas/entities/programa.entity";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({ name: 'fichas'})
+//"Criterio": "Program
+//"Titulo": "Con Sabor
+// "Patrimonio": "No",
+//"Genero": "Documenta
+//"Productora": "Telec
+//"Idioma": "ESP",   
+//"Clasificación": ""
+//
+//borrar
+
+
+@Entity({ name: 'fichas' })
 export class Ficha {
 
     @PrimaryGeneratedColumn('uuid')
@@ -12,11 +24,12 @@ export class Ficha {
     @Column()
     codigoArchivo: string;
 
-    @Column()
-    criterio: string;
+    @ManyToOne(() => Programa)
+    @JoinColumn({ name: 'id_programa' })
+    programa: Programa;
 
     @Column()
-    titulo: string;
+    id_programa: string;
 
     @Column()
     error: string;
@@ -25,19 +38,10 @@ export class Ficha {
     referencia: string;
 
     @Column()
-    patrimonio: string;
-
-    @Column()
-    genero: string;
-
-    @Column()
     fechaRealizacion: string;
 
     @Column()
     fechaEmision: string;
-
-    @Column()
-    productora: string;
 
     @Column()
     casaProductora: string;
@@ -90,10 +94,27 @@ export class Ficha {
     @Column()
     copyright: string;
 
-    @Column()
-    idioma: string;
 
-    @Column()
-    clasificacion: string;
 }
+
+// @Column()
+// criterio: string;
+
+// @Column()
+// titulo: string;
+
+// @Column()
+// idioma: string;
+
+// @Column()
+// clasificacion: string;
+
+// @Column()
+// productora: string;
+
+// @Column()
+// patrimonio: string;
+
+// @Column()
+// genero: string;
 

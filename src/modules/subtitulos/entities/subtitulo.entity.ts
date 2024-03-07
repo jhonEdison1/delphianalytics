@@ -5,28 +5,28 @@ import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typ
 @Entity({ name: 'subtitulos' })
 export class Subtitulo {
     @PrimaryColumn()
-    ClavePrincipal: string;
+    clavePrincipal: string;
 
     @ManyToOne(() => Ficha)
-    @JoinColumn({ name: 'ID_Ficha' })
+    @JoinColumn({ name: 'id_ficha' })
     ficha: Ficha;
 
     @Column()
-    ID_Ficha: string;
+    id_ficha: string;
 
     @Column()
-    Linea: number;
+    linea: number;
 
     @Column()
-    Tiempo_Inicio: string;
+    tiempo_Inicio: string;
 
     @Column()
-    Tiempo_Fin: string;
+    tiempo_Fin: string;
 
     @Column('tsvector')
     @Index({ fulltext: true })
-    Texto: string;
+    texto: string;
 
     @Column({ nullable: true })
-    TextoOriginal: string; // Campo para almacenar el texto sin procesar
+    textoOriginal: string; // Campo para almacenar el texto sin procesar
 }

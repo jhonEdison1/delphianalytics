@@ -6,6 +6,7 @@ import { Repository, getConnection } from 'typeorm';
 import { parse } from 'csv-parse';
 import { Subtitulo } from './entities/subtitulo.entity';
 import { handleDbError } from 'src/utils/error.message';
+import { CsvConverter } from 'src/utils/csv.converter';
 
 @Injectable()
 export class SubtitulosService {
@@ -18,13 +19,13 @@ export class SubtitulosService {
   async create(createSubtituloDto: CreateSubtituloDto) {
      
     const nuevoSubtitulo = new Subtitulo();
-    nuevoSubtitulo.ClavePrincipal = createSubtituloDto.ClavePrincipal;
-    nuevoSubtitulo.ID_Ficha = createSubtituloDto.ID_Ficha;
-    nuevoSubtitulo.Linea = createSubtituloDto.Linea;
-    nuevoSubtitulo.Tiempo_Inicio = createSubtituloDto.Tiempo_Inicio;
-    nuevoSubtitulo.Tiempo_Fin = createSubtituloDto.Tiempo_Fin;
-    nuevoSubtitulo.Texto =  await this.escaparCaracteres(createSubtituloDto.Texto);
-    nuevoSubtitulo.TextoOriginal = createSubtituloDto.Texto;
+    nuevoSubtitulo.clavePrincipal = createSubtituloDto.ClavePrincipal;
+    nuevoSubtitulo.id_ficha = createSubtituloDto.ID_Ficha;
+    nuevoSubtitulo.linea = createSubtituloDto.Linea;
+    nuevoSubtitulo.tiempo_Inicio = createSubtituloDto.Tiempo_Inicio;
+    nuevoSubtitulo.tiempo_Fin = createSubtituloDto.Tiempo_Fin;
+    nuevoSubtitulo.texto =  await this.escaparCaracteres(createSubtituloDto.Texto);
+    nuevoSubtitulo.textoOriginal = createSubtituloDto.Texto;
     console.log(nuevoSubtitulo)   
     return await this.subtituloRepository.save(nuevoSubtitulo);
 
@@ -37,17 +38,17 @@ export class SubtitulosService {
     try {
       
       const csvString = fileBuffer.toString('utf-8');
-      const jsonData = await this.parseCSVToJson(csvString);       
+      const jsonData = await CsvConverter(csvString);       
 
       const entidadesSubtitulos = await Promise.all(jsonData.map(async (subtitulo) => {
         const nuevoSubtitulo = new Subtitulo();
-        nuevoSubtitulo.ClavePrincipal = subtitulo.ClavePrincipal;
-        nuevoSubtitulo.ID_Ficha = subtitulo['ID Ficha'];
-        nuevoSubtitulo.Linea = subtitulo['Línea'];
-        nuevoSubtitulo.Tiempo_Inicio = subtitulo['Tiempo Inicio'];
-        nuevoSubtitulo.Tiempo_Fin = subtitulo['Tiempo Fin'];
-        nuevoSubtitulo.Texto = await this.escaparCaracteres(subtitulo.Texto);
-        nuevoSubtitulo.TextoOriginal = subtitulo.Texto;
+        nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal;
+        nuevoSubtitulo.id_ficha = subtitulo['ID Ficha'];
+        nuevoSubtitulo.linea = subtitulo['Línea'];
+        nuevoSubtitulo.tiempo_Inicio = subtitulo['Tiempo Inicio'];
+        nuevoSubtitulo.tiempo_Fin = subtitulo['Tiempo Fin'];
+        nuevoSubtitulo.texto = await this.escaparCaracteres(subtitulo.Texto);
+        nuevoSubtitulo.textoOriginal = subtitulo.Texto;
         return nuevoSubtitulo;
       }));
   
@@ -66,27 +67,21 @@ export class SubtitulosService {
 
   }
 
-
-  private async parseCSVToJson(csvString: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      parse(csvString, {
-        columns: true, // Trata la primera fila como encabezados
-        skip_empty_lines: false,
-      }, (err, output) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(output);
-        }
-      });
-    });
-  }
-
-
   async escaparCaracteres(texto) {
     // Escapar caracteres problemáticos con \
     const caracteresProblematicos = /[\\'":!()*/?]/g;
     return texto.replace(caracteresProblematicos, '\\$&');
+  }
+
+  async findAll() {
+    //find all and count
+
+    const [subtitulos, total] = await this.subtituloRepository.findAndCount();
+
+    return {
+      data: subtitulos,
+      total
+    };
   }
 
 

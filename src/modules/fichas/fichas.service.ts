@@ -5,7 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Ficha } from './entities/ficha.entity';
 import { Repository } from 'typeorm';
 import { handleDbError } from 'src/utils/error.message';
-import { parse } from 'csv-parse';
+import {CsvConverter} from 'src/utils/csv.converter';
+
 
 
 @Injectable()
@@ -17,29 +18,23 @@ export class FichasService {
 
 
   async procesarArchivo(fileBuffer: Buffer) {
-
-
     try {
       
       const csvString = fileBuffer.toString('utf-8');
-      const jsonData = await this.parseCSVToJson(csvString);
-     // return jsonData;
+      const jsonData = await CsvConverter(csvString);
+      //return jsonData;
 
       const entidadesFichas  = jsonData.map((ficha) => {
-        console.log(ficha)
+        
         const nuevaFicha = new Ficha();
         nuevaFicha.clavePrincipal = ficha.ClavePrincipal;
         nuevaFicha.nombreArchivo = ficha['Nombre del Archivo'];
-        nuevaFicha.codigoArchivo = ficha['Código del Archivo'];
-        nuevaFicha.criterio = ficha.Criterio;
-        nuevaFicha.titulo = ficha.Titulo;
+        nuevaFicha.codigoArchivo = ficha['Código del Archivo']; 
+        nuevaFicha.id_programa = ficha['ID Programa'];     
         nuevaFicha.error = ficha.Error;
-        nuevaFicha.referencia = ficha.Referencia;
-        nuevaFicha.patrimonio = ficha.Patrimonio;
-        nuevaFicha.genero = ficha.Genero;
+        nuevaFicha.referencia = ficha.Referencia;       
         nuevaFicha.fechaRealizacion = ficha['Fecha de Realización'];
         nuevaFicha.fechaEmision = ficha['Fecha de Emisión'];
-        nuevaFicha.productora = ficha.Productora;
         nuevaFicha.casaProductora = ficha['Casa Productora'];
         nuevaFicha.formato = ficha.Formato;
         nuevaFicha.tipoArchivoRecibido = ficha['Tipo de Archivo Recibido'];
@@ -56,9 +51,7 @@ export class FichasService {
         nuevaFicha.duracion = ficha.Duración;
         nuevaFicha.sinopsis = ficha.Sinopsis;
         nuevaFicha.observaciones = ficha.Observaciones;
-        nuevaFicha.copyright = ficha['Copyright​'];
-        nuevaFicha.idioma = ficha.Idioma;
-        nuevaFicha.clasificacion = ficha.Clasificación;        
+        nuevaFicha.copyright = ficha['Copyright​'];              
         return nuevaFicha;
       });
 //
@@ -76,22 +69,24 @@ export class FichasService {
     }
 
   }
+
+  async getFichasPaginated(page: number, limit: number) {
+      
+      const [fichas, total] = await this.fichaRepository.findAndCount({
+        skip: (page - 1) * limit,
+        take: limit
+      });
+  
+      return {
+        data: fichas,
+        total
+      };
+
+
+  }
   
 
-  private async parseCSVToJson(csvString: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      parse(csvString, {
-        columns: true, // Trata la primera fila como encabezados
-        skip_empty_lines: false,
-      }, (err, output) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(output);
-        }
-      });
-    });
-  }
+
 
 
 

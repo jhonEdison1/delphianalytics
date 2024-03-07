@@ -8,6 +8,8 @@ import config from './config';
 import { IamModule } from './modules/iam/iam.module';
 import { FichasModule } from './modules/fichas/fichas.module';
 import { SubtitulosModule } from './modules/subtitulos/subtitulos.module';
+import { ProgramasModule } from './modules/programas/programas.module';
+import { TagsModule } from './modules/tags/tags.module';
 
 @Module({
   imports: [
@@ -19,7 +21,9 @@ import { SubtitulosModule } from './modules/subtitulos/subtitulos.module';
     UsuariosModule,
     IamModule,
     FichasModule,
-    SubtitulosModule  
+    SubtitulosModule,
+    ProgramasModule,
+    TagsModule  
   ],
   controllers: [AppController],
   providers: [AppService],
