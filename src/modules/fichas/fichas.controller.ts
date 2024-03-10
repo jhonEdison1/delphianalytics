@@ -29,5 +29,10 @@ export class FichasController {
     return this.fichasService.getFichasPaginated(query.page, query.limit);
   }
 
+  @Get('/oneById/:id')
+  async findOne(@Param('id') id: string) {
+    return this.fichasService.findOne(id);
+  }
+
   
 }

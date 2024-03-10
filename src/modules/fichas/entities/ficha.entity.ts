@@ -1,17 +1,6 @@
 import { Programa } from "src/modules/programas/entities/programa.entity";
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-//"Criterio": "Program
-//"Titulo": "Con Sabor
-// "Patrimonio": "No",
-//"Genero": "Documenta
-//"Productora": "Telec
-//"Idioma": "ESP",   
-//"Clasificación": ""
-//
-//borrar
-
-
 @Entity({ name: 'fichas' })
 export class Ficha {
 

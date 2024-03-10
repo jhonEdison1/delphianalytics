@@ -3,15 +3,18 @@ import { CreateProgramaDto } from './dto/create-programa.dto';
 import { UpdateProgramaDto } from './dto/update-programa.dto';
 import { Programa } from './entities/programa.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Like, Repository } from 'typeorm';
 import { CsvConverter } from 'src/utils/csv.converter';
 import { handleDbError } from 'src/utils/error.message';
+import { Ficha } from '../fichas/entities/ficha.entity';
+import { FiltrosProgramaDto } from './dto/filtros-programa-dto';
 
 @Injectable()
 export class ProgramasService {
 
   constructor(
-    @InjectRepository(Programa) private programaRepository: Repository<Programa>
+    @InjectRepository(Programa) private programaRepository: Repository<Programa>,
+    @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>
   ) { }
 
   async procesarArchivo(fileBuffer: Buffer) {
@@ -19,7 +22,10 @@ export class ProgramasService {
       const csvString = fileBuffer.toString('utf-8');
       const jsonData = await CsvConverter(csvString);
 
+      // return jsonData;
+
       const entidadesProgramas = jsonData.map((programa) => {
+        // console.log(programa)
         const nuevoPrograma = new Programa();
         nuevoPrograma.clavePrincipal = programa.ClavePrincipal;
         nuevoPrograma.titulo = programa.Titulo;
@@ -28,8 +34,8 @@ export class ProgramasService {
         nuevoPrograma.patrimonio = programa.Patrimonio;
         nuevoPrograma.clasificacion = programa.Clasificación;
         nuevoPrograma.idioma = programa.Idioma;
-        nuevoPrograma.productora = programa.Productora;      
-       
+        nuevoPrograma.productora = programa.Productora;
+
         return nuevoPrograma;
       });
 
@@ -37,6 +43,7 @@ export class ProgramasService {
       return { message: 'Programas guardados correctamente' };
 
     } catch (error) {
+      console.log(error);
       const message = handleDbError(error);
       return { message };
     }
@@ -58,6 +65,120 @@ export class ProgramasService {
     };
 
   }
+
+
+  async findOne(id: string) {
+
+    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+
+    const [fichas, totalFichas] = await this.fichaRepository.findAndCount({ where: { programa: programa } });
+
+
+    //const fichas = await this.fichaRepository.find({ where: { programa: programa } });
+
+    //traer todas las fichas que tengan el id del programa
+
+    return {
+      programa,
+      fichas,
+      totalFichas
+    };
+
+
+
+  }
+
+
+
+ /* async findByFiltros(
+    filtros: FiltrosProgramaDto,
+    page: number,
+    limit: number,
+  ) : Promise<{ programas: Programa[]; total: number }>  {
+    const { titulo, criterio,  patrimonio, clasificacion, idioma } =
+      filtros;
+
+      const condiciones: any[] = [];
+
+      if (titulo) {
+        condiciones.push({ titulo: ILike(`%${titulo}%`) });
+      }
+      if (criterio) {
+        condiciones.push({ criterio });
+      }
+      
+      if (patrimonio) {
+        condiciones.push({ patrimonio });
+      }
+      if (clasificacion) {
+        condiciones.push({ clasificacion });
+      }
+      if (idioma) {
+        condiciones.push({ idioma });
+      }
+  
+      const programasPorFiltro = await Promise.all(
+        condiciones.map((condicion) =>
+          this.programaRepository.findAndCount({
+            where: condicion,
+            take: limit,
+            skip: (page - 1) * limit,
+          }),
+        ),
+      );
+  
+      // Unimos los resultados y eliminamos duplicados
+      let programas: Programa[] = [];
+      programasPorFiltro.forEach(([programasFiltro, total]) => {
+        programas = [...programas, ...programasFiltro];
+      });
+  
+      // Contamos el total de resultados
+      const total = programasPorFiltro.reduce((acumulador, [, total]) => {
+        return acumulador + total;
+      }, 0);
+  
+      return { programas, total };
+
+  }*/
+
+  async findByFiltros(
+    filtros: FiltrosProgramaDto,
+    page: number,
+    limit: number,
+  ): Promise<{ programas: Programa[]; total: number }> {
+    const { titulo, criterio,  patrimonio, clasificacion, idioma } =
+      filtros;
+
+    // Creamos un array para almacenar las condiciones de filtrado
+    const condiciones: any[] = [];
+
+    if (titulo) {
+      condiciones.push({ titulo: ILike(`%${titulo}%`) });
+    }
+    if (criterio) {
+      condiciones.push({ criterio });
+    }  
+    if (patrimonio) {
+      condiciones.push({ patrimonio });
+    }
+    if (clasificacion) {
+      condiciones.push({ clasificacion });
+    }
+    if (idioma) {
+      condiciones.push({ idioma });
+    }
+
+    // Ejecutamos la consulta para obtener los programas
+    const [programas, total] = await this.programaRepository.findAndCount({
+      where: condiciones,
+      take: limit,
+      skip: (page - 1) * limit,
+    });
+
+    return { programas, total };
+  }
+
 
 
 }

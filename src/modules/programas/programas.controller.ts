@@ -5,6 +5,7 @@ import { UpdateProgramaDto } from './dto/update-programa.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FiltersPaginatedQuery } from 'src/common/filtersPaginatedQuery';
+import { FiltrosProgramaDto } from './dto/filtros-programa-dto';
 
 @ApiTags('programas')
 @Controller('programas')
@@ -32,6 +33,22 @@ export class ProgramasController {
     @Query() query: FiltersPaginatedQuery,
   ) {
     return this.programasService.getProgramasPaginated(query.page, query.limit);
+  }
+
+  @Get('/oneById/:id')
+  async findOne(@Param('id') id: string) {
+    return this.programasService.findOne(id);
+  }
+
+  @Post('/filtros')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async getProgramasFiltrados(
+    @Query() query: FiltersPaginatedQuery,
+    @Body() filtros: FiltrosProgramaDto
+
+  ) {
+    return this.programasService.findByFiltros(filtros, query.page, query.limit);
   }
 
 

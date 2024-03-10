@@ -6,6 +6,7 @@ import { Ficha } from './entities/ficha.entity';
 import { Repository } from 'typeorm';
 import { handleDbError } from 'src/utils/error.message';
 import {CsvConverter} from 'src/utils/csv.converter';
+import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 
 
 
@@ -13,7 +14,8 @@ import {CsvConverter} from 'src/utils/csv.converter';
 export class FichasService {
 
   constructor(
-    @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>
+    @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
+    @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>
   ) { }
 
 
@@ -82,6 +84,27 @@ export class FichasService {
         total
       };
 
+
+  }
+
+
+  async findOne(id: string) {
+
+    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+
+    const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.findAndCount({ 
+      where: { ficha: ficha },
+      order: {
+        linea: "ASC"
+      }
+     }))
+
+    return {
+      ficha,
+      subtitulos,
+      totalSubtitulos
+    };
+    
 
   }
   

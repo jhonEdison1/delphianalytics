@@ -1,5 +1,5 @@
 import { Ficha } from 'src/modules/fichas/entities/ficha.entity';
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index, IndexOptions } from 'typeorm';
 
 
 @Entity({ name: 'subtitulos' })
@@ -24,7 +24,16 @@ export class Subtitulo {
     tiempo_Fin: string;
 
     @Column('tsvector')
-    @Index({ fulltext: true })
+    @Index('idx_subtitulo_texto_gin', {
+        synchronize: false, // Evita que TypeORM trate de sincronizar el índice automáticamente
+        fulltext: true,
+        name: 'idx_subtitulo_texto_gin',
+        unique: false,
+        spatial: false,
+        parser: 'pg_catalog.tsvector_ops',
+        using: 'GIN',
+        where: ''
+    } as IndexOptions)
     texto: string;
 
     @Column({ nullable: true })

@@ -3,11 +3,12 @@ import { FichasService } from './fichas.service';
 import { FichasController } from './fichas.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Ficha } from './entities/ficha.entity';
+import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 
 @Module({
   imports: [
     // Import the TypeOrmModule to use the Ficha entity
-     TypeOrmModule.forFeature([Ficha]),
+     TypeOrmModule.forFeature([Ficha, Subtitulo]),
   ],
   controllers: [FichasController],
   providers: [FichasService],

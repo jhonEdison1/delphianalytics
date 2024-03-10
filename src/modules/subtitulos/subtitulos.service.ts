@@ -25,7 +25,7 @@ export class SubtitulosService {
     nuevoSubtitulo.tiempo_Inicio = createSubtituloDto.Tiempo_Inicio;
     nuevoSubtitulo.tiempo_Fin = createSubtituloDto.Tiempo_Fin;
     nuevoSubtitulo.texto =  await this.escaparCaracteres(createSubtituloDto.Texto);
-    nuevoSubtitulo.textoOriginal = createSubtituloDto.Texto;
+   // nuevoSubtitulo.textoOriginal = createSubtituloDto.Texto;
     console.log(nuevoSubtitulo)   
     return await this.subtituloRepository.save(nuevoSubtitulo);
 
@@ -38,10 +38,13 @@ export class SubtitulosService {
     try {
       
       const csvString = fileBuffer.toString('utf-8');
-      const jsonData = await CsvConverter(csvString);       
+      const jsonData = await CsvConverter(csvString);    
+     
 
       const entidadesSubtitulos = await Promise.all(jsonData.map(async (subtitulo) => {
-        const nuevoSubtitulo = new Subtitulo();
+       // console.log(subtitulo)
+       
+        const nuevoSubtitulo = new Subtitulo();       
         nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal;
         nuevoSubtitulo.id_ficha = subtitulo['ID Ficha'];
         nuevoSubtitulo.linea = subtitulo['Línea'];
@@ -51,8 +54,21 @@ export class SubtitulosService {
         nuevoSubtitulo.textoOriginal = subtitulo.Texto;
         return nuevoSubtitulo;
       }));
+
+      console.log(entidadesSubtitulos)
+
+      //insertar uno por uno
+      for (let index = 0; index < entidadesSubtitulos.length; index++) {
+       
+        const element = entidadesSubtitulos[index];
+        if (!element.clavePrincipal || !element.id_ficha || element.clavePrincipal == '' || element.id_ficha == '' ) {
+          continue; 
+        }
+        console.log('elemento', element)
+        await this.subtituloRepository.save(element);
+      }
   
-      await this.subtituloRepository.save(entidadesSubtitulos);
+      //await this.subtituloRepository.save(entidadesSubtitulos);
       return { message: 'Archivo procesado correctamente' }
 
 

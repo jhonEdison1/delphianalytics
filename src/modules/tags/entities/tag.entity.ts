@@ -1,5 +1,5 @@
 import { Ficha } from "src/modules/fichas/entities/ficha.entity";
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, IndexOptions, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 
 
 // {
@@ -23,7 +23,16 @@ export class Tag {
     id_ficha: string;
 
     @Column('tsvector')
-    @Index({ fulltext: true })
+    @Index('idx_tag_texto_gin', {
+        synchronize: false, // Evita que TypeORM trate de sincronizar el índice automáticamente
+        fulltext: true,
+        name: 'idx_tag_texto_gin',
+        unique: false,
+        spatial: false,
+        parser: 'pg_catalog.tsvector_ops',
+        using: 'GIN',
+        where: ''
+    } as IndexOptions)
     textoTag: string;
 
     @Column({ nullable: true })

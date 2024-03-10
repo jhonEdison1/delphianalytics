@@ -10,6 +10,8 @@ import { FichasModule } from './modules/fichas/fichas.module';
 import { SubtitulosModule } from './modules/subtitulos/subtitulos.module';
 import { ProgramasModule } from './modules/programas/programas.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { PietajesModule } from './modules/pietajes/pietajes.module';
+import { SoundtracksModule } from './modules/soundtracks/soundtracks.module';
 
 @Module({
   imports: [
@@ -23,7 +25,9 @@ import { TagsModule } from './modules/tags/tags.module';
     FichasModule,
     SubtitulosModule,
     ProgramasModule,
-    TagsModule  
+    TagsModule,
+    PietajesModule,
+    SoundtracksModule  
   ],
   controllers: [AppController],
   providers: [AppService],
