@@ -68,79 +68,50 @@ export class ProgramasService {
 
 
   async findOne(id: string) {
-
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-
     const [fichas, totalFichas] = await this.fichaRepository.findAndCount({ where: { programa: programa } });
+  
+    const emision = fichas.map(ficha => {
+      return ficha.fechaEmision.split('/')[2];
+    }).reduce((acumulador, año) => {
+      if (!acumulador[año]) {
+        acumulador[año] = 1;
+      } else {
+        acumulador[año] = acumulador[año] + 1;
+      }
+      return acumulador;
+    }, {});
+ 
 
-
-    //const fichas = await this.fichaRepository.find({ where: { programa: programa } });
-
-    //traer todas las fichas que tengan el id del programa
+    const emisionArray = Object.keys(emision).map(año => {
+      return { año, cantidad: emision[año] };
+    });
+   
 
     return {
       programa,
-      fichas,
-      totalFichas
+      emisionArray,
+      totalFichas  
     };
+  }
 
+  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number) {
+    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+    const [fichas, total] = await this.fichaRepository.findAndCount({
+      where: { programa: programa, fechaEmision: Like(`%/${year}`) },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { fechaEmision: 'ASC' }
+    });
 
-
+    return {
+      data: fichas,
+      total
+    };
   }
 
 
 
- /* async findByFiltros(
-    filtros: FiltrosProgramaDto,
-    page: number,
-    limit: number,
-  ) : Promise<{ programas: Programa[]; total: number }>  {
-    const { titulo, criterio,  patrimonio, clasificacion, idioma } =
-      filtros;
-
-      const condiciones: any[] = [];
-
-      if (titulo) {
-        condiciones.push({ titulo: ILike(`%${titulo}%`) });
-      }
-      if (criterio) {
-        condiciones.push({ criterio });
-      }
-      
-      if (patrimonio) {
-        condiciones.push({ patrimonio });
-      }
-      if (clasificacion) {
-        condiciones.push({ clasificacion });
-      }
-      if (idioma) {
-        condiciones.push({ idioma });
-      }
-  
-      const programasPorFiltro = await Promise.all(
-        condiciones.map((condicion) =>
-          this.programaRepository.findAndCount({
-            where: condicion,
-            take: limit,
-            skip: (page - 1) * limit,
-          }),
-        ),
-      );
-  
-      // Unimos los resultados y eliminamos duplicados
-      let programas: Programa[] = [];
-      programasPorFiltro.forEach(([programasFiltro, total]) => {
-        programas = [...programas, ...programasFiltro];
-      });
-  
-      // Contamos el total de resultados
-      const total = programasPorFiltro.reduce((acumulador, [, total]) => {
-        return acumulador + total;
-      }, 0);
-  
-      return { programas, total };
-
-  }*/
 
   async findByFiltros(
     filtros: FiltrosProgramaDto,

@@ -40,6 +40,13 @@ export class ProgramasController {
     return this.programasService.findOne(id);
   }
 
+  @Get('/fichasByProgramaYAnio/:id/:anio')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async getFichaByProgramaYAnio(@Param('id') id: string, @Param('anio') anio: string, @Query() query: FiltersPaginatedQuery ){
+    return this.programasService.findFichasByProgramaAndYear(id, anio, query.page, query.limit);
+  }
+
   @Post('/filtros')
   @ApiQuery({ name: 'page', type: Number, required: true })
   @ApiQuery({ name: 'limit', type: Number, required: true })
