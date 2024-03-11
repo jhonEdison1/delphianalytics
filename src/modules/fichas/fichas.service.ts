@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { handleDbError } from 'src/utils/error.message';
 import {CsvConverter} from 'src/utils/csv.converter';
 import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
+import { Tag } from '../tags/entities/tag.entity';
 
 
 
@@ -15,7 +16,8 @@ export class FichasService {
 
   constructor(
     @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
-    @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>
+    @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
+    @InjectRepository(Tag) private tagRepository: Repository<Tag>,
   ) { }
 
 
@@ -99,10 +101,16 @@ export class FichasService {
       }
      }))
 
+     const [tags, totalTags] = (await this.tagRepository.findAndCount({
+      where: { ficha: ficha }
+     }))
+
     return {
       ficha,
       subtitulos,
-      totalSubtitulos
+      totalSubtitulos,
+      tags,
+      totalTags
     };
     
 
