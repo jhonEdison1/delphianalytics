@@ -85,29 +85,44 @@ export class ProgramasService {
 
     const emisionArray = Object.keys(emision).map(año => {
       return { año, cantidad: emision[año] };
-    });
-   
-
+    }); 
     return {
       programa,
       emisionArray,
-      totalFichas  
+      totalFichas
     };
   }
 
   async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number) {
-    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-    const [fichas, total] = await this.fichaRepository.findAndCount({
-      where: { programa: programa, fechaEmision: Like(`%/${year}`) },
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { fechaEmision: 'ASC' }
-    });
 
-    return {
-      data: fichas,
-      total
-    };
+    if(year.length !== 4)
+    {
+      year = "";
+      const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+      const [fichas, total] = await this.fichaRepository.findAndCount({
+        where: { programa: programa, fechaEmision: year },
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { fechaEmision: 'ASC' }
+      });
+      return {
+        data: fichas,
+        total
+      };
+    }else{
+      year = '/'+year;
+      const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+      const [fichas, total] = await this.fichaRepository.findAndCount({
+        where: { programa: programa, fechaEmision: Like(`%${year}`) },
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { fechaEmision: 'ASC' }
+      });
+      return {
+        data: fichas,
+        total
+      };
+    }  
   }
 
 
