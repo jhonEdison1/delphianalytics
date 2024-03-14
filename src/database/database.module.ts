@@ -16,7 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
               database: configService.get<string>('config.database.dbname'),
               autoLoadEntities: true, // Cargar entidades automáticamente desde el directorio de tu proyecto
               synchronize: true, // Sincronizar modelos con la base de datos (solo para desarrollo)
-              schema: configService.get<string>('config.database.schema'),
+              //schema: configService.get<string>('config.database.schema'),
               entities: [__dirname + '/**/*.entity{.ts,.js}'], // Cargar todas las entidades automáticamente
             }),
           }), 

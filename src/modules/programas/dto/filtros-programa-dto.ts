@@ -2,18 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsIn, IsOptional } from "class-validator";
 
 
-export class FiltrosProgramaDto {
-
-    //entidad criterio, patrimonio, idioma, clasificacion, titulo
-
-   /* @ApiProperty({
-        required: true,
-        description: 'Entidad de busqueda'
-    })
-    // es un enum o es en programa o es ficha no puede tomar otro valor
-    @IsIn(['programa', 'ficha'])
-    readonly entidad: string;*/
-
+export class FiltrosProgramaDto { 
 
     @ApiProperty({
         required: false,

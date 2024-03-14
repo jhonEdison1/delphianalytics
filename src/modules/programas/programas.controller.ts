@@ -6,6 +6,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FiltersPaginatedQuery } from 'src/common/filtersPaginatedQuery';
 import { FiltrosProgramaDto } from './dto/filtros-programa-dto';
+import { RequestDTO } from './dto/filtrosReq';
 
 @ApiTags('programas')
 @Controller('programas')
@@ -56,6 +57,17 @@ export class ProgramasController {
 
   ) {
     return this.programasService.findByFiltros(filtros, query.page, query.limit);
+  }
+
+  @Post('buscar')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async buscar(
+    @Query() query: FiltersPaginatedQuery,
+    @Body() request: RequestDTO
+  ) {
+    const { programaFiltros, fichaFiltros, palabraClave } = request;
+    return this.programasService.buscarConFiltros(programaFiltros, fichaFiltros, palabraClave, query.page, query.limit);
   }
 
 
