@@ -90,7 +90,7 @@ export class FichasService {
   }
 
 
-  async findOne(id: string) {
+  async findOne(id: string, page: number, limit: number) {
 
     const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
 
@@ -98,7 +98,9 @@ export class FichasService {
       where: { ficha: ficha },
       order: {
         linea: "ASC"
-      }
+      }, 
+      skip: (page - 1) * limit,
+      take: limit
      }))
 
      const [tags, totalTags] = (await this.tagRepository.findAndCount({

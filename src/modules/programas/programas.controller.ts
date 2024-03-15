@@ -70,6 +70,21 @@ export class ProgramasController {
     return this.programasService.buscarConFiltros(programaFiltros, fichaFiltros, palabraClave, query.page, query.limit);
   }
 
+  @Post('buscar/:id')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async buscarPorPrograma(
+    @Param('id') id: string,
+    @Query() query: FiltersPaginatedQuery,
+    @Body() request: RequestDTO
+  ) {
+    const {  fichaFiltros, palabraClave } = request;
+    return this.programasService.buscarFichasConFiltros(id,  fichaFiltros, palabraClave, query.page, query.limit);
+  }
+
+
+
+
 
 
 }

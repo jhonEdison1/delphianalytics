@@ -30,8 +30,13 @@ export class FichasController {
   }
 
   @Get('/oneById/:id')
-  async findOne(@Param('id') id: string) {
-    return this.fichasService.findOne(id);
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async findOne(
+    @Param('id') id: string,
+    @Query() query: FiltersPaginatedQuery
+    ) {
+    return this.fichasService.findOne(id, query.page, query.limit);
   }
 
   
