@@ -83,6 +83,17 @@ export class ProgramasController {
   }
 
 
+  @Post('/subir-imagen/:id')
+  @UseInterceptors(FileInterceptor('archivo'))
+  async subirImagen(
+    @UploadedFile() archivo: Express.Multer.File,
+    @Param('id') id: string,
+    ) {      
+    return await this.programasService.subirImagen(archivo, id);
+
+  }
+
+
 
 
 

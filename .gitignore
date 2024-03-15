@@ -5,6 +5,9 @@
 # environment file
 .env
 
+//carpera public
+/public
+
 # Logs
 logs
 *.log

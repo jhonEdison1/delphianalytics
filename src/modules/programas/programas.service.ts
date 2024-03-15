@@ -9,6 +9,8 @@ import { handleDbError } from 'src/utils/error.message';
 import { Ficha } from '../fichas/entities/ficha.entity';
 import { FiltrosProgramaDto } from './dto/filtros-programa-dto';
 import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class ProgramasService {
@@ -202,7 +204,7 @@ export class ProgramasService {
 
     const fichas = await fichaQuery.select('ficha.clavePrincipal').getMany();
 
-   // return fichas;
+    // return fichas;
 
     if (fichas.length === 0) {
       return { resultados: [], total: 0 };
@@ -383,6 +385,39 @@ export class ProgramasService {
     const resultadosPaginados = resultadoOrdenado.slice(skip, skip + tamanoPagina);
 
     return { resultados: resultadosPaginados, total };
+  }
+
+
+
+  async subirImagen(file: Express.Multer.File, id: string) {
+
+    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+
+    //subir el archivo a una carpeta en el servidor
+
+    //el path es el dir 
+
+    const dir = path.resolve(__dirname, '../../../public/imagenes');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const filePath = path.join(dir, file.originalname);
+    fs.writeFileSync(filePath, file.buffer, 'binary');
+
+
+
+    //fs.writeFileSync(filePath, file.buffer, 'binary');
+
+    //guardar la ruta en la base de datos
+
+    programa.imagen = filePath;
+
+    await this.programaRepository.save(programa);
+
+    return { message: 'Imagen guardada correctamente' };
+
+
   }
 
 
