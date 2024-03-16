@@ -404,8 +404,8 @@ export class ProgramasService {
     //subir el archivo a una carpeta en el servidor
 
     //el path es el dir 
-
-    const dir = path.resolve(__dirname, 'var/www/html/assets/programas/' + id + '/');
+    // ../../../../../../var/www/html/assets/programas/
+    const dir = path.resolve(__dirname, '../../../../../../var/www/html/assets/programas/' + id + '/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
