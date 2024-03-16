@@ -36,6 +36,6 @@ export class FiltrosFichasDto {
         description: 'soporteFisico'
     })
     @IsOptional()
-    readonly soporteFisico: string;
+    readonly soporteFisicoGrabacion: string;
 
 }
