@@ -172,7 +172,8 @@ export class ProgramasService {
   //la siguiente funcion necesito filtrar por progrmas y por fichas, primero se filtra por programas y luego por fichas, debe ser paginado
 
   async buscarConFiltros(programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
-    const skip = (pagina - 1) * tamanoPagina;
+    const skip = (Number(pagina) - 1) * Number(tamanoPagina);
+    const limit = skip + Number(tamanoPagina);
 
     const programaQuery = this.programaRepository.createQueryBuilder('programa');
     if (programaFiltros) {
@@ -248,7 +249,7 @@ export class ProgramasService {
       const total = resultadoOrdenado.length;
 
       // Paginar los resultados
-      const resultadosPaginados = resultadoOrdenado.slice(skip, skip + tamanoPagina);
+      const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
 
       return { resultados: resultadosPaginados, total };
     }
@@ -300,7 +301,7 @@ export class ProgramasService {
     const total = resultadoOrdenado.length;
 
     // Paginar los resultados
-    const resultadosPaginados = resultadoOrdenado.slice(skip, skip + tamanoPagina);
+    const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
 
     return { resultados: resultadosPaginados, total };
 
@@ -312,8 +313,10 @@ export class ProgramasService {
   //Buscar fichas en un programa por filtrosFicha y palabra clave, traer cuantas coincidencias de la palabra clave hay en cada ficha y paginar las fichas, el orden sera de mayor a menor coincidencias de la palabra clave
 
   async buscarFichasConFiltros(programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
-
-    const skip = (pagina - 1) * tamanoPagina;
+    console.log('pagina', pagina, 'tamanoPagina', tamanoPagina);
+    const skip = (Number(pagina) - 1) * Number(tamanoPagina);
+    const limit = skip + Number(tamanoPagina);
+    console.log('skip', skip, 'limit', limit);
 
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: programaId } });
 
@@ -341,7 +344,9 @@ export class ProgramasService {
 
       const total = resultados.length;
 
-      const resultadosPaginados = resultados.slice(skip, skip + tamanoPagina);
+      //const resultadosPaginados = resultados.slice(skip, skip + tamanoPagina);
+      const resultadosPaginados = resultados.slice(skip, limit);
+      
 
       return { resultados: resultadosPaginados, total };
     }
@@ -382,7 +387,10 @@ export class ProgramasService {
 
     const total = resultadoOrdenado.length;
 
-    const resultadosPaginados = resultadoOrdenado.slice(skip, skip + tamanoPagina);
+
+    //const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + tamanoPagina));
+    const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
+    console.log(skip,limit)
 
     return { resultados: resultadosPaginados, total };
   }
