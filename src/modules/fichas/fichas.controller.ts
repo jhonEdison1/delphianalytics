@@ -5,6 +5,7 @@ import { UpdateFichaDto } from './dto/update-ficha.dto';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FiltersPaginatedQuery } from 'src/common/filtersPaginatedQuery';
+import { RequestDTO } from '../programas/dto/filtrosReq';
 
 @ApiTags('fichas')
 @Controller('fichas')
@@ -37,6 +38,17 @@ export class FichasController {
     @Query() query: FiltersPaginatedQuery
     ) {
     return this.fichasService.findOne(id, query.page, query.limit);
+  }
+
+  @Post('/buscar/:id')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  async buscar(
+    @Param('id') id: string,
+    @Body() request: RequestDTO,
+    @Query() query: FiltersPaginatedQuery
+    ) {
+    return this.fichasService.buscarPalabraEnFicha(id, request.palabraClave, query.page, query.limit);
   }
 
   

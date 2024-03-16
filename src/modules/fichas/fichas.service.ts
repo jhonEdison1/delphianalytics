@@ -117,6 +117,45 @@ export class FichasService {
     
 
   }
+
+
+
+  async buscarPalabraEnFicha(id: string, palabraClave:string, page:number, limit:number){
+
+    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+
+    if(palabraClave === '') {
+      const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.findAndCount({ 
+        where: { ficha: ficha },
+        order: {
+          linea: "ASC"
+        }, 
+        skip: (page - 1) * limit,
+        take: limit
+       }))
+  
+       return {
+        subtitulos,
+        totalSubtitulos
+      };
+    }
+
+
+    const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.createQueryBuilder('subtitulo')
+    .where("subtitulo.ficha = :ficha", { ficha: ficha.clavePrincipal })
+    .andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave })
+    .orderBy('subtitulo.linea', 'ASC')
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount())
+
+    return {
+      subtitulos,
+      totalSubtitulos
+    }
+
+
+  }
   
 
 
