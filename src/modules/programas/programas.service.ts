@@ -175,6 +175,12 @@ export class ProgramasService {
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
 
+    if(palabraClave !== ''){
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
+    }
+
     const programaQuery = this.programaRepository.createQueryBuilder('programa');
     if (programaFiltros) {
       for (const key in programaFiltros) {
@@ -313,10 +319,16 @@ export class ProgramasService {
   //Buscar fichas en un programa por filtrosFicha y palabra clave, traer cuantas coincidencias de la palabra clave hay en cada ficha y paginar las fichas, el orden sera de mayor a menor coincidencias de la palabra clave
 
   async buscarFichasConFiltros(programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
-    console.log('pagina', pagina, 'tamanoPagina', tamanoPagina);
+  
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
-    console.log('skip', skip, 'limit', limit);
+
+    if(palabraClave !== ''){
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
+    }
+ 
 
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: programaId } });
 

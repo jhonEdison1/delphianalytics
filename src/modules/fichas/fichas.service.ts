@@ -124,6 +124,12 @@ export class FichasService {
 
     const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
 
+    if(palabraClave !== ''){
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
+    }
+
     if(palabraClave === '') {
       const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.findAndCount({ 
         where: { ficha: ficha },
