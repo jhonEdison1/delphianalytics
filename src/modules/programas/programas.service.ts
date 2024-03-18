@@ -405,7 +405,7 @@ export class ProgramasService {
 
     //el path es el dir 
     // ../../../../../../var/www/html/assets/programas/
-    const dir = path.resolve(__dirname, '../../../public/imagenes/' + id + '/');
+    const dir = path.resolve(__dirname, '../../../../../../var/www/html/assets/programas/' + id + '/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
