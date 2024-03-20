@@ -200,6 +200,7 @@ export class ProgramasService {
 
         for (let i = 0; i < resultadoArray.length; i++) {
           resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
+          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias};
         }
 
         const skip = (Number(page) - 1) * Number(limit);
@@ -258,6 +259,7 @@ export class ProgramasService {
 
         for (let i = 0; i < resultadoArray.length; i++) {
           resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
+          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias};
         }
 
         //return resultadoOrdenado2
