@@ -193,15 +193,22 @@ export class ProgramasService {
           return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
         });
 
-        const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
+     
 
         const skip = (Number(page) - 1) * Number(limit);
 
-        const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + limit));
+        const resultadoOrdenado2 = [];
+
+        for (let i = 0; i < resultadoArray.length; i++) {
+          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
+        }
+
+        const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
+
 
         return {
-          data: fichas,
-          total: resultadosPaginados.length
+          data: resultadosPaginados,
+          total: resultadoOrdenado2.length
         };
       } else {
 
@@ -212,6 +219,8 @@ export class ProgramasService {
           order: { [criterio]: orden }
         });
 
+        //return fichas
+
         const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
         subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
         subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
@@ -220,6 +229,8 @@ export class ProgramasService {
           .getMany();
 
         //agrupar por ficha y devolver solo las fichas que tengan coincidencias y no esten repetidas, no se devuelven los subtitulos
+
+        
 
         const agrupado = subtitulos.reduce((acumulador, subtitulo) => {
           const { id_ficha } = subtitulo;
@@ -231,18 +242,32 @@ export class ProgramasService {
           return acumulador;
         }, {});
 
+        //return agrupado;
+
         const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
           return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
         });
 
-        const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
+        //return resultadoArray;
+        //const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
+        const resultadoOrdenado2 = [];
+
+        for (let i = 0; i < resultadoArray.length; i++) {
+          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
+        }
+
+        //return resultadoOrdenado2
+
+        /*for (let i = 0; i < resultadoOrdenado.length; i++) {
+          resultadoOrdenado[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoOrdenado[i].clavePrincipal } });
+        }*/
 
         const skip = (Number(page) - 1) * Number(limit);
 
-        const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + limit));
+        const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
         return {
-          data: fichas,
-          total: resultadosPaginados.length
+          data: resultadosPaginados,
+          total: resultadoOrdenado2.length
         };
       }
 
