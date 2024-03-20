@@ -193,18 +193,19 @@ export class ProgramasService {
           return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
         });
 
-     
-
-        const skip = (Number(page) - 1) * Number(limit);
-
         const resultadoOrdenado2 = [];
 
         for (let i = 0; i < resultadoArray.length; i++) {
           resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
         }
 
-        const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
+        const skip = (Number(page) - 1) * Number(limit);
 
+        let result:any = parseInt(skip.toString()) + parseInt(limit.toString());
+
+        const resultadosPaginados = resultadoOrdenado2.slice(skip, result);
+
+        // const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
 
         return {
           data: resultadosPaginados,
@@ -263,8 +264,9 @@ export class ProgramasService {
         }*/
 
         const skip = (Number(page) - 1) * Number(limit);
+        let result:any = parseInt(skip.toString()) + parseInt(limit.toString());
 
-        const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
+        const resultadosPaginados = resultadoOrdenado2.slice(skip, result);
         return {
           data: resultadosPaginados,
           total: resultadoOrdenado2.length
