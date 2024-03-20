@@ -162,6 +162,9 @@ export class ProgramasService {
       }
 
     } else {
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
       //si viene palabra clave, buscar todas las fichas que sean del programa y del año, luego en la colecciones de subtitulos buscar las coincidencias de la palabra clave en todos los subtitulos de cada ficha, agrupar por ficha y devolver solo las fichas que tengan coincidencias
       if (year.length !== 4) {
         year = "";
