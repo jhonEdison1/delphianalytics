@@ -42,14 +42,25 @@ export class ProgramasController {
     return this.programasService.findOne(id);
   }
 
-  @Get('/fichasByProgramaYAnio/:id/:anio')
+  /*@Get('/fichasByProgramaYAnio/:id/:anio')
   @ApiQuery({ name: 'page', type: Number, required: true })
   @ApiQuery({ name: 'limit', type: Number, required: true })
   @ApiQuery({ name: 'orden', type: String, required: false })
   @ApiQuery({ name: 'criterioOrden', type: String, required: false})
   async getFichaByProgramaYAnio(@Param('id') id: string, @Param('anio') anio: string, @Query() query: FiltersPaginatedQuery ){
     return this.programasService.findFichasByProgramaAndYear(id, anio, query.page, query.limit, query.orden, query.criterioOrden);
+  }*/
+
+  @Post('/fichasByProgramaYAnio/:id/:anio')
+  @ApiQuery({ name: 'page', type: Number, required: true })
+  @ApiQuery({ name: 'limit', type: Number, required: true })
+  @ApiQuery({ name: 'orden', type: String, required: false })
+  @ApiQuery({ name: 'criterioOrden', type: String, required: false})
+  async getFichaByProgramaYAnio(@Param('id') id: string, @Param('anio') anio: string, @Query() query: FiltersPaginatedQuery,  @Body() request: RequestDTO ){
+    const { palabraClave } = request;
+    return this.programasService.findFichasByProgramaAndYear(id, anio, query.page, query.limit, query.orden, query.criterioOrden, palabraClave);
   }
+
 
   @Post('/filtros')
   @ApiQuery({ name: 'page', type: Number, required: true })

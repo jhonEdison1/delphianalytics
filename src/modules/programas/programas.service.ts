@@ -95,7 +95,7 @@ export class ProgramasService {
     };
   }
 
-  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha') {
+  /*async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha') {
 
     let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
 
@@ -126,8 +126,135 @@ export class ProgramasService {
         total
       };
     }
-  }
+  }*/
 
+  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
+
+    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
+    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+    if (palabraClave === '') {
+      if (year.length !== 4) {
+        year = "";
+
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: year },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      } else {
+        year = '/' + year;
+        // const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: Like(`%${year}`) },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      }
+
+    } else {
+      //si viene palabra clave, buscar todas las fichas que sean del programa y del año, luego en la colecciones de subtitulos buscar las coincidencias de la palabra clave en todos los subtitulos de cada ficha, agrupar por ficha y devolver solo las fichas que tengan coincidencias
+      if (year.length !== 4) {
+        year = "";
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: year },
+          order: { [criterio]: orden }
+        });
+
+        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        // Obtener los subtitulos que coinciden con la palabra clave
+        const subtitulos = await subtituloQuery
+          .getMany();
+
+
+         // return subtitulos;
+        const agrupado = subtitulos.reduce((acumulador, subtitulo) => {
+          const { id_ficha } = subtitulo;
+          if (!acumulador[id_ficha]) {
+            acumulador[id_ficha] = 1;
+          } else {
+            acumulador[id_ficha] = acumulador[id_ficha] + 1;
+          }
+          return acumulador;
+        }, {});
+
+        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
+          return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
+        });
+
+        const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
+
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + limit));
+
+        return {
+          data: fichas,
+          total: resultadosPaginados.length
+        };
+      } else {
+
+        year = '/' + year;
+        // const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: Like(`%${year}`) },         
+          order: { [criterio]: orden }
+        });
+
+        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        // Obtener los subtitulos que coinciden con la palabra clave
+        const subtitulos = await subtituloQuery
+          .getMany();
+
+        //agrupar por ficha y devolver solo las fichas que tengan coincidencias y no esten repetidas, no se devuelven los subtitulos
+
+        const agrupado = subtitulos.reduce((acumulador, subtitulo) => {
+          const { id_ficha } = subtitulo;
+          if (!acumulador[id_ficha]) {
+            acumulador[id_ficha] = 1;
+          } else {
+            acumulador[id_ficha] = acumulador[id_ficha] + 1;
+          }
+          return acumulador;
+        }, {});
+
+        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
+          return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
+        });
+
+        const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
+
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + limit));
+        return {
+          data: fichas,
+          total: resultadosPaginados.length
+        };
+      }
+
+    }
+
+
+
+
+
+
+
+  }
 
 
 
@@ -277,7 +404,7 @@ export class ProgramasService {
       return { programa, ficha, subtitulo };
     }));
 
-   // console.log(resultados)
+    // console.log(resultados)
 
     //agrupar por programas, la cantidad de fichas y la cantidad de subtitulos y las veces que aparece la palabra clave
 
