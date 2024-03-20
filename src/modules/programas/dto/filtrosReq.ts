@@ -9,4 +9,6 @@ export class RequestDTO {
   fichaFiltros: FiltrosFichasDto;
 
   palabraClave: string;
+
+  ids: string[];
 }

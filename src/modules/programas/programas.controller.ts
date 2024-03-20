@@ -69,8 +69,8 @@ export class ProgramasController {
     @Query() query: FiltersPaginatedQuery,
     @Body() request: RequestDTO
   ) {
-    const { programaFiltros, fichaFiltros, palabraClave } = request;
-    return this.programasService.buscarConFiltros(programaFiltros, fichaFiltros, palabraClave, query.page, query.limit);
+    const { programaFiltros, fichaFiltros, palabraClave, ids } = request;
+    return this.programasService.buscarConFiltros(programaFiltros, fichaFiltros, palabraClave, query.page, query.limit, ids);
   }
 
   @Post('buscar/:id')

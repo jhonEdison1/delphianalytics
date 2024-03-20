@@ -171,25 +171,29 @@ export class ProgramasService {
 
   //la siguiente funcion necesito filtrar por progrmas y por fichas, primero se filtra por programas y luego por fichas, debe ser paginado
 
-  async buscarConFiltros(programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
+  async buscarConFiltros(programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number, ids: string[]): Promise<any> {
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
 
-    if(palabraClave !== ''){
+    if (palabraClave !== '') {
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
     }
-
     const programaQuery = this.programaRepository.createQueryBuilder('programa');
-    if (programaFiltros) {
-      for (const key in programaFiltros) {
-        if (key === 'titulo') {
-          programaQuery.andWhere(`programa.${key} ILIKE :${key}`, { [key]: `%${programaFiltros[key]}%` });
-        } else {
-          programaQuery.andWhere(`programa.${key} = :${key}`, { [key]: programaFiltros[key] });
+    if (ids.length == 0) {
+
+      if (programaFiltros) {
+        for (const key in programaFiltros) {
+          if (key === 'titulo') {
+            programaQuery.andWhere(`programa.${key} ILIKE :${key}`, { [key]: `%${programaFiltros[key]}%` });
+          } else {
+            programaQuery.andWhere(`programa.${key} = :${key}`, { [key]: programaFiltros[key] });
+          }
         }
       }
+    } else {
+      programaQuery.where('programa.clavePrincipal IN (:...ids)', { ids });
     }
 
     // Obtener los IDs de los programas que coinciden con los filtros
@@ -273,7 +277,7 @@ export class ProgramasService {
       return { programa, ficha, subtitulo };
     }));
 
-    console.log(resultados)
+   // console.log(resultados)
 
     //agrupar por programas, la cantidad de fichas y la cantidad de subtitulos y las veces que aparece la palabra clave
 
@@ -319,16 +323,16 @@ export class ProgramasService {
   //Buscar fichas en un programa por filtrosFicha y palabra clave, traer cuantas coincidencias de la palabra clave hay en cada ficha y paginar las fichas, el orden sera de mayor a menor coincidencias de la palabra clave
 
   async buscarFichasConFiltros(programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
-  
+
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
 
-    if(palabraClave !== ''){
+    if (palabraClave !== '') {
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
     }
- 
+
 
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: programaId } });
 
@@ -358,7 +362,7 @@ export class ProgramasService {
 
       //const resultadosPaginados = resultados.slice(skip, skip + tamanoPagina);
       const resultadosPaginados = resultados.slice(skip, limit);
-      
+
 
       return { resultados: resultadosPaginados, total };
     }
@@ -402,7 +406,7 @@ export class ProgramasService {
 
     //const resultadosPaginados = resultadoOrdenado.slice(skip, (skip + tamanoPagina));
     const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
-    console.log(skip,limit)
+    //console.log(skip, limit)
 
     return { resultados: resultadosPaginados, total };
   }
