@@ -53,14 +53,12 @@ export class ProgramasService {
     }
   }
 
-  async getProgramasPaginated(page: number, limit: number) {
-
-    // skip: (page - 1) * limit,
-    // take: limit
+  async getProgramasPaginated(page: number, limit: number, orden: 'ASC' | 'DESC') {
 
     const [programas, total] = await this.programaRepository.findAndCount({
       skip: (page - 1) * limit,
-      take: limit
+      take: limit,
+      order: { titulo: orden }
     });
 
     return {
@@ -97,7 +95,9 @@ export class ProgramasService {
     };
   }
 
-  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number) {
+  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha') {
+
+    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
 
     if (year.length !== 4) {
       year = "";
@@ -106,7 +106,7 @@ export class ProgramasService {
         where: { programa: programa, fechaEmision: year },
         skip: (page - 1) * limit,
         take: limit,
-        order: { fechaEmision: 'ASC' }
+        order: { [criterio]: orden }
       });
       return {
         data: fichas,
@@ -119,7 +119,7 @@ export class ProgramasService {
         where: { programa: programa, fechaEmision: Like(`%${year}`) },
         skip: (page - 1) * limit,
         take: limit,
-        order: { fechaEmision: 'ASC' }
+        order: { [criterio]: orden }
       });
       return {
         data: fichas,

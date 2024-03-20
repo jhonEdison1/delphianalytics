@@ -30,10 +30,11 @@ export class ProgramasController {
   @Get('/paginados')
   @ApiQuery({ name: 'page', type: Number, required: true })
   @ApiQuery({ name: 'limit', type: Number, required: true })
+  @ApiQuery({ name: 'orden', type: String, required: false })
   async getProgramasPaginadas(
     @Query() query: FiltersPaginatedQuery,
   ) {
-    return this.programasService.getProgramasPaginated(query.page, query.limit);
+    return this.programasService.getProgramasPaginated(query.page, query.limit, query.orden);
   }
 
   @Get('/oneById/:id')
@@ -44,8 +45,10 @@ export class ProgramasController {
   @Get('/fichasByProgramaYAnio/:id/:anio')
   @ApiQuery({ name: 'page', type: Number, required: true })
   @ApiQuery({ name: 'limit', type: Number, required: true })
+  @ApiQuery({ name: 'orden', type: String, required: false })
+  @ApiQuery({ name: 'criterioOrden', type: String, required: false})
   async getFichaByProgramaYAnio(@Param('id') id: string, @Param('anio') anio: string, @Query() query: FiltersPaginatedQuery ){
-    return this.programasService.findFichasByProgramaAndYear(id, anio, query.page, query.limit);
+    return this.programasService.findFichasByProgramaAndYear(id, anio, query.page, query.limit, query.orden, query.criterioOrden);
   }
 
   @Post('/filtros')

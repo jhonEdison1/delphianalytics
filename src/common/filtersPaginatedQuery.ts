@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, Min } from "class-validator";
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
 
 export class FiltersPaginatedQuery {
     @IsInt()
@@ -10,4 +10,14 @@ export class FiltersPaginatedQuery {
     @Min(1)
     @IsNotEmpty()
     limit: number;
+
+    @IsString()
+    @IsOptional()
+    @IsIn(['ASC', 'DESC'])
+    orden?: 'ASC' | 'DESC';
+
+    @IsString()
+    @IsOptional()
+    @IsIn(['alfabetico', 'fecha'])
+    criterioOrden?: 'alfabetico' | 'fecha';
   }
