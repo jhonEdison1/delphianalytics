@@ -51,5 +51,13 @@ export class FichasController {
     return this.fichasService.buscarPalabraEnFicha(id, request.palabraClave, query.page, query.limit);
   }
 
+  @Get('/subtitulos/:id')
+  async getSubtitulos(
+    @Param('id') id: string
+    ) {
+    return this.fichasService.getSubtitulos(id);
+  }
+  
+
   
 }

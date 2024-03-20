@@ -162,6 +162,20 @@ export class FichasService {
 
 
   }
+
+
+  async getSubtitulos(id: string) {
+    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+
+    const subtitulos = await this.subtituloRepository.find({ 
+      where: { ficha: ficha },
+      order: {
+        linea: "ASC"
+      }
+    })
+
+    return subtitulos;
+  }
   
 
 
