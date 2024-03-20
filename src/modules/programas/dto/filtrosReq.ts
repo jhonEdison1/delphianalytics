@@ -9,15 +9,4 @@ export class RequestDTO {
   fichaFiltros: FiltrosFichasDto;
 
   palabraClave: string;
-
-  @IsBoolean()
-  @IsNotEmpty()
-  ordenar: boolean;
-   
-  criterioOrden: 'alfabetico' | 'fecha';
-
-  @IsOptional()
-  @IsString()
-  @IsIn(['ASC', 'DESC'])
-  orden?: 'ASC' | 'DESC';
 }
