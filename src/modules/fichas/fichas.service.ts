@@ -204,4 +204,19 @@ export class FichasService {
     };
   }
 
+  async getAllfichasNoSubtitulos(id: string){
+      
+    const [fichas, totalFichas] = await this.fichaRepository
+    .createQueryBuilder("ficha")
+    .leftJoin("subtitulos", "subtitulo", "ficha.clavePrincipal = subtitulo.id_ficha")
+    .select(['ficha.clavePrincipal', 'ficha.codigoArchivo', 'ficha.id_programa'])
+    .where("subtitulo.id_ficha IS NULL")
+    .getManyAndCount();
+
+    return {
+      fichas,
+      totalFichas
+    };
+  }
+
 }

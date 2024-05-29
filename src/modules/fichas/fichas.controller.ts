@@ -71,5 +71,12 @@ export class FichasController {
   //   ) {
   //   return this.fichasService.getAllfichas(id);
   // }
+
+  @Get('/allNosubs/:id')
+  async getFichasNoSubtitulos(
+    @Param('id') id: string
+  ) {
+    return this.fichasService.getAllfichasNoSubtitulos(id);
+  }
   
 }
