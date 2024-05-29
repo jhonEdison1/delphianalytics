@@ -17,9 +17,17 @@ export class FichasController {
   async subirArchivo(@UploadedFile() archivo:  Express.Multer.File) {
     // Procesar el archivo y enviarlo al servicio de Ficha
     const fileBuffer = archivo.buffer;
-    return await this.fichasService.procesarArchivo(fileBuffer);
-   
+    return await this.fichasService.procesarArchivo(fileBuffer);   
   }
+
+  @Post('/subirSinopsis')
+  @UseInterceptors(FileInterceptor('archivo'))
+  async subirSinopsis(@UploadedFile() archivo:  Express.Multer.File) {
+    // Procesar el archivo y enviarlo al servicio de Ficha
+    const fileBuffer = archivo.buffer;
+    return await this.fichasService.subirSinopsisArchivo(fileBuffer);   
+  }
+
 
   @Get('/paginadas')
   @ApiQuery({ name: 'page', type: Number, required: true })
@@ -78,5 +86,7 @@ export class FichasController {
   ) {
     return this.fichasService.getAllfichasNoSubtitulos(id);
   }
+
+
   
 }

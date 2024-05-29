@@ -217,6 +217,29 @@ export class FichasService {
       fichas,
       totalFichas
     };
+  } 
+
+  async subirSinopsisArchivo(fileBuffer : Buffer){
+
+    try {
+      const csvString = fileBuffer.toString('utf-8');
+      const jsonData = await CsvConverter(csvString);
+
+      const entidadesFichas  = jsonData.map(async (ficha) => {
+
+        const fichaBD = await this.fichaRepository.findOne({ where: { clavePrincipal: ficha.ClavePrincipal} });
+        if(fichaBD){
+          fichaBD.sinopsis = ficha.Sinopsis;          
+          await this.fichaRepository.save(fichaBD);
+        }           
+      }); 
+
+      return { message: 'Archivo procesado correctamente' }
+    } catch (error) {
+      console.log(error)
+      const message = handleDbError(error)
+      return { message }      
+    }
   }
 
 }
