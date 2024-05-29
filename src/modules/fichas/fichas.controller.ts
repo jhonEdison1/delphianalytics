@@ -57,7 +57,19 @@ export class FichasController {
     ) {
     return this.fichasService.getSubtitulos(id);
   }
-  
 
+  @Get('/creditos/:id')
+  async getCreditos(
+    @Param('id') id: string
+    ) {
+    return this.fichasService.getCreditos(id);
+  }
+  
+  // @Get('/all/:id')
+  // async getTags(
+  //   @Param('id') id: string
+  //   ) {
+  //   return this.fichasService.getAllfichas(id);
+  // }
   
 }

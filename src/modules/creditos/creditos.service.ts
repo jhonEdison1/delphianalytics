@@ -31,6 +31,7 @@ export class CreditosService {
          return nuevoCredito;
        }));
 
+
        //insertar uno por uno
       for (let index = 0; index < entidadesCreditos.length; index++) {
        

@@ -3,11 +3,12 @@ import { CreateFichaDto } from './dto/create-ficha.dto';
 import { UpdateFichaDto } from './dto/update-ficha.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Ficha } from './entities/ficha.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { handleDbError } from 'src/utils/error.message';
 import {CsvConverter} from 'src/utils/csv.converter';
 import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 import { Tag } from '../tags/entities/tag.entity';
+import { Credito } from '../creditos/entities/credito.entity';
 
 
 
@@ -17,6 +18,7 @@ export class FichasService {
   constructor(
     @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
     @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
+    @InjectRepository(Credito) private creditoRepository: Repository<Credito>,
     @InjectRepository(Tag) private tagRepository: Repository<Tag>,
   ) { }
 
@@ -177,10 +179,29 @@ export class FichasService {
     return subtitulos;
   }
   
+  async getCreditos(id: string) {
+    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
 
+    const creditos = await this.creditoRepository.find({ 
+      where: { ficha: ficha }
+    })
 
+    return creditos;
+  }
 
+  async getAllfichas(id: string){
 
+    const [fichas, totalFichas] =  await this.fichaRepository.findAndCount(
+      {
+        select: ['clavePrincipal', 'codigoArchivo'],
+        where: { id_programa : Not(id)}
+      }
+    );
 
+    return {
+      fichas,
+      totalFichas
+    };
+  }
 
 }
