@@ -12,6 +12,7 @@ import { ProgramasModule } from './modules/programas/programas.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { PietajesModule } from './modules/pietajes/pietajes.module';
 import { SoundtracksModule } from './modules/soundtracks/soundtracks.module';
+import { CreditosModule } from './modules/creditos/creditos.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { SoundtracksModule } from './modules/soundtracks/soundtracks.module';
     ProgramasModule,
     TagsModule,
     PietajesModule,
-    SoundtracksModule  
+    SoundtracksModule,
+    CreditosModule  
   ],
   controllers: [AppController],
   providers: [AppService],
