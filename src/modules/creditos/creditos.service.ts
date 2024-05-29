@@ -21,16 +21,17 @@ export class CreditosService {
       const jsonData = await CsvConverter(csvString);
 
       const entidadesCreditos = await Promise.all(jsonData.map(async (credito) => {
-        console.log(credito)
+        // console.log(credito['Clave Principal']);
         
          const nuevoCredito = new Credito();       
-         nuevoCredito.clavePrincipal = credito['ClavePrincipal'];
+         nuevoCredito.clavePrincipal = credito['Clave Principal'];
          nuevoCredito.id_ficha = credito['ID Ficha'];
          nuevoCredito.cargo = credito['Cargo'];
          nuevoCredito.persona = credito['Persona'];
          return nuevoCredito;
        }));
 
+      //  console.log(entidadesCreditos);
 
        //insertar uno por uno
       for (let index = 0; index < entidadesCreditos.length; index++) {
@@ -43,7 +44,7 @@ export class CreditosService {
         await this.creditoRepository.save(element);
       }
   
-      //await this.subtituloRepository.save(entidadesSubtitulos);
+      // await this.subtituloRepository.save(entidadesSubtitulos);
       return { message: 'Archivo procesado correctamente' }
     }
     catch (error) {
