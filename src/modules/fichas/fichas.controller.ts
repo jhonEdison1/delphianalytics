@@ -22,8 +22,7 @@ export class FichasController {
 
   @Post('/subirSinopsis')
   @UseInterceptors(FileInterceptor('archivo'))
-  async subirSinopsis(@UploadedFile() archivo:  Express.Multer.File) {
-    // Procesar el archivo y enviarlo al servicio de Ficha
+  async subirSinopsis(@UploadedFile() archivo:  Express.Multer.File) {  
     const fileBuffer = archivo.buffer;
     return await this.fichasService.subirSinopsisArchivo(fileBuffer);   
   }
