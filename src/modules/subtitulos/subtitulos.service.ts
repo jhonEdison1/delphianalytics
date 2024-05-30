@@ -44,8 +44,9 @@ export class SubtitulosService {
       const entidadesSubtitulos = await Promise.all(jsonData.map(async (subtitulo) => {
        // console.log(subtitulo)
        
-        const nuevoSubtitulo = new Subtitulo();       
-        nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal;
+        const nuevoSubtitulo = new Subtitulo();  
+        //ajustar si trae Clave principál en blanco generar un id aleatorio unico de tipo uuid     
+        nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal ? subtitulo.ClavePrincipal : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         nuevoSubtitulo.id_ficha = subtitulo['ID Ficha'];
         nuevoSubtitulo.linea = subtitulo['Línea'];
         nuevoSubtitulo.tiempo_Inicio = subtitulo['Tiempo Inicio'];
