@@ -29,5 +29,8 @@ export class SubtitulosController {
     return await this.subtitulosService.findAll();
   }
 
- 
+  @Delete('/deleteAll')
+  async deleteAll() {
+    return await this.subtitulosService.eliminarSubtitulos();
+  }
 }
