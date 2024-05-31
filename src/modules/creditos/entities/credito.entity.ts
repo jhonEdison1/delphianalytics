@@ -16,6 +16,19 @@ export class Credito {
     @Column()
     persona: string;
 
+    @Column('tsvector')
+    @Index('idx_credito_persona_gin', {
+        synchronize: false, // Evita que TypeORM trate de sincronizar el índice automáticamente
+        fulltext: true,
+        name: 'idx_credito_persona_gin',
+        unique: false,
+        spatial: false,
+        parser: 'pg_catalog.tsvector_ops',
+        using: 'GIN',
+        where: ''
+    } as IndexOptions)
+    persona_ts : string;
+
     @Column()
     cargo: string;
 }
