@@ -56,18 +56,18 @@ export class SubtitulosService {
         return nuevoSubtitulo;
       }));
 
-      console.log(entidadesSubtitulos)
+      // console.log(entidadesSubtitulos)
 
       //insertar uno por uno
-      // for (let index = 0; index < entidadesSubtitulos.length; index++) {
+      for (let index = 0; index < entidadesSubtitulos.length; index++) {
        
-      //   const element = entidadesSubtitulos[index];
-      //   if (!element.clavePrincipal || !element.id_ficha || element.clavePrincipal == '' || element.id_ficha == '' ) {
-      //     continue; 
-      //   }
-      //   // console.log('elemento', element)
-      //   await this.subtituloRepository.save(element);
-      // }
+        const element = entidadesSubtitulos[index];
+        if (!element.clavePrincipal || !element.id_ficha || element.clavePrincipal == '' || element.id_ficha == '' ) {
+          continue; 
+        }
+        // console.log('elemento', element)
+        await this.subtituloRepository.save(element);
+      }
   
       // await this.subtituloRepository.save(entidadesSubtitulos);
       return { message: 'Archivo procesado correctamente' }
