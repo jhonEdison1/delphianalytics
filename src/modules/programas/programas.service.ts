@@ -320,7 +320,7 @@ export class ProgramasService {
 
       if (year.length !== 4) {
         year = "";
-        const [fichas, total] = await this.fichaRepository.findAndCount({
+        const [fichas, totaltemp] = await this.fichaRepository.findAndCount({
           where: { programa: programa, fechaEmision: year },
           order: { [criterio]: orden }
         });
@@ -339,12 +339,12 @@ export class ProgramasService {
 
         const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
           const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
-          return { ficha, subtitulo };
+          return { ficha, subtitulo, credito: null };
         }));
 
         const resultadosCreditos = await Promise.all(creditos.map(async credito => {
           const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
-          return { ficha, credito };
+          return { ficha, credito, subtitulo: null};
         }));
 
         // Procesa los resultados y devuelve el resultado paginado
@@ -364,48 +364,60 @@ export class ProgramasService {
           return acumulador;
         }, {});
 
-        const agrupadoCreditos = resultadosCreditos.reduce((acumulador, resultado) => {
-          const { ficha } = resultado;
-          if (!acumulador[ficha.clavePrincipal]) {
-            acumulador[ficha.clavePrincipal] = {
-              ficha,
-              coincidencias: 1,
-              creditos: [resultado.credito]
+        const agrupado = resultadosSubtitulos.concat(resultadosCreditos).reduce((acumulador, resultado) => {
+          const { ficha, subtitulo, credito } = resultado;
+          if (!acumulador[programa.clavePrincipal]) {
+            acumulador[programa.clavePrincipal] = {
+              // programa,
+              fichas: [ficha],
+              // subtitulos: subtitulo ? [subtitulo] : [],
+              // creditos: credito ? [credito] : []
+              // ficha: ficha.clavePrincipal
             };
           } else {
-            acumulador[ficha.clavePrincipal].coincidencias++;
-            acumulador[ficha.clavePrincipal].creditos.push(resultado.credito);
+            acumulador[programa.clavePrincipal].fichas.push(ficha);
+            // if (subtitulo) acumulador[programa.clavePrincipal].subtitulos.push(subtitulo);
+            // if (credito) acumulador[programa.clavePrincipal].creditos.push(credito);
           }
           return acumulador;
         }, {});
 
-        const resultadoArraySubtitulos = Object.keys(agrupadoSubtitulos).map(clavePrincipal => {
-          return agrupadoSubtitulos[clavePrincipal];
+        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
+          return agrupado[clavePrincipal];
         });
+        
 
-        const resultadoArrayCreditos = Object.keys(agrupadoCreditos).map(clavePrincipal => {
-          return agrupadoCreditos[clavePrincipal];
-        });
+        // return {resultadoArray}        
+        if(resultadoArray.length === 0) {
+          return { data: [], total: 0 };
+        }
 
-        const resultadoFinal = resultadoArraySubtitulos.map(subtitulo => {
-          const coincidencias = subtitulo.coincidencias;
-          const ficha = subtitulo.ficha;
-          const creditos = resultadoArrayCreditos.find(credito => credito.ficha.clavePrincipal === ficha.clavePrincipal);
-          return { ficha, coincidencias, subtitulos: subtitulo.subtitulos, creditos: creditos ? creditos.creditos : [] };
-        });
 
-        const resultadoOrdenado = resultadoFinal.sort((a, b) => b.coincidencias - a.coincidencias);
+        const fichasList = resultadoArray[0].fichas.filter((v, i, a) => a.findIndex(t => (t['clavePrincipal'] === v['clavePrincipal'])) === i);
 
-        const skip = (Number(page) - 1) * Number(limit);
+        // return {fichasList};
 
-        let result: any = parseInt(skip.toString()) + parseInt(limit.toString());
+        const resultadoOrdenado2 = [];
 
-        const resultadosPaginados = resultadoOrdenado.slice(skip, result);
+        for (let i = 0; i < fichasList.length; i++) {
+          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: fichasList[i].clavePrincipal } });
+          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: fichasList[i].coincidencias};
+        }
 
-        return {
-          data: resultadosPaginados,
-          total: resultadoOrdenado.length
-        };
+        
+         // Ordenar el array por la cantidad de subtitulos
+       const resultadoOrdenado = fichasList.sort((a, b) => b.subtitulos - a.subtitulos);
+        
+      //  return {resultadoOrdenado}
+       // Obtener el total de resultadoscarlos
+       const total = resultadoOrdenado.length;
+       const skip = (Number(page) - 1) * Number(limit);
+        const limite = skip + Number(limit);
+ 
+       // Paginar los resultados
+       const resultadosPaginados = resultadoOrdenado.slice(skip, limite);
+        // estos es lo nuevo
+       return { data: resultadosPaginados, total };
 
       } else {
         year = '/' + year;
@@ -470,7 +482,7 @@ export class ProgramasService {
         if(resultadoArray.length === 0) {
           return { data: [], total: 0 };
         }
-        
+
         const fichasList = resultadoArray[0].fichas.filter((v, i, a) => a.findIndex(t => (t['clavePrincipal'] === v['clavePrincipal'])) === i);
 
         // return {fichasList};
