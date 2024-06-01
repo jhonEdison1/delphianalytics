@@ -27,7 +27,8 @@ export class CreditosService {
          nuevoCredito.clavePrincipal = credito['Clave Principal'];
          nuevoCredito.id_ficha = credito['ID Ficha'];
          nuevoCredito.cargo = credito['Cargo'];
-         nuevoCredito.persona = credito['Persona'];
+         nuevoCredito.persona = credito['Persona']; 
+         nuevoCredito.persona_ts = await this.escaparCaracteres(credito['Persona']);
          return nuevoCredito;
        }));
 
@@ -52,5 +53,13 @@ export class CreditosService {
       return { message }
     }
 
+  }
+
+
+
+  async escaparCaracteres(texto) {
+    // Escapar caracteres problemáticos con \
+    const caracteresProblematicos = /[\\'":!()*/?]/g;
+    return texto.replace(caracteresProblematicos, '\\$&');
   }
 }
