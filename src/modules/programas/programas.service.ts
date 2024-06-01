@@ -130,6 +130,7 @@ export class ProgramasService {
     }
   }*/
 
+  /*
   async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
 
     let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
@@ -266,9 +267,6 @@ export class ProgramasService {
 
         //return resultadoOrdenado2
 
-        /*for (let i = 0; i < resultadoOrdenado.length; i++) {
-          resultadoOrdenado[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoOrdenado[i].clavePrincipal } });
-        }*/
 
         const skip = (Number(page) - 1) * Number(limit);
         let result: any = parseInt(skip.toString()) + parseInt(limit.toString());
@@ -281,14 +279,171 @@ export class ProgramasService {
       }
 
     }
+   }*/
 
+  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
 
+    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
+    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+    if (palabraClave === '') {
+        if (year.length !== 4) {
+            year = "";
 
+            const [fichas, total] = await this.fichaRepository.findAndCount({
+                where: { programa: programa, fechaEmision: year },
+                skip: (page - 1) * limit,
+                take: limit,
+                order: { [criterio]: orden }
+            });
+            return {
+                data: fichas,
+                total
+            };
+        } else {
+            year = '/' + year;
+            const [fichas, total] = await this.fichaRepository.findAndCount({
+                where: { programa: programa, fechaEmision: Like(`%${year}`) },
+                skip: (page - 1) * limit,
+                take: limit,
+                order: { [criterio]: orden }
+            });
+            return {
+                data: fichas,
+                total
+            };
+        }
 
+    } else {
+        const palabras = palabraClave.split(" ");
+        const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+        palabraClave = fraseFormateada;
 
+        if (year.length !== 4) {
+            year = "";
+            const [fichas, total] = await this.fichaRepository.findAndCount({
+                where: { programa: programa, fechaEmision: year },
+                order: { [criterio]: orden }
+            });
 
+            const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+            subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+            subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+            const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
+            creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+            creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
 
-  }
+            const [subtitulos, creditos] = await Promise.all([
+                subtituloQuery.getMany(),
+                creditoQuery.getMany()
+            ]);
+
+            const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
+                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
+                return { ficha, subtitulo };
+            }));
+
+            const resultadosCreditos = await Promise.all(creditos.map(async credito => {
+                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
+                return { ficha, credito };
+            }));
+
+            // Procesa los resultados y devuelve el resultado paginado
+
+        } else {
+            year = '/' + year;
+            const [fichas, total] = await this.fichaRepository.findAndCount({
+                where: { programa: programa, fechaEmision: Like(`%${year}`) },
+                order: { [criterio]: orden }
+            });
+
+            const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+            subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+            subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+
+            const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
+            creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+            creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+
+            const [subtitulos, creditos] = await Promise.all([
+                subtituloQuery.getMany(),
+                creditoQuery.getMany()
+            ]);
+
+            const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
+                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
+                return { ficha, subtitulo };
+            }));
+
+            const resultadosCreditos = await Promise.all(creditos.map(async credito => {
+                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
+                return { ficha, credito };
+            }));
+
+            // Procesa los resultados y devuelve el resultado paginado
+
+            const agrupadoSubtitulos = resultadosSubtitulos.reduce((acumulador, resultado) => {
+              const { ficha } = resultado;
+              if (!acumulador[ficha.clavePrincipal]) {
+                  acumulador[ficha.clavePrincipal] = {
+                      ficha,
+                      coincidencias: 1,
+                      subtitulos: [resultado.subtitulo]
+                  };
+              } else {
+                  acumulador[ficha.clavePrincipal].coincidencias++;
+                  acumulador[ficha.clavePrincipal].subtitulos.push(resultado.subtitulo);
+              }
+              return acumulador;
+          }, {});
+          
+          const agrupadoCreditos = resultadosCreditos.reduce((acumulador, resultado) => {
+              const { ficha } = resultado;
+              if (!acumulador[ficha.clavePrincipal]) {
+                  acumulador[ficha.clavePrincipal] = {
+                      ficha,
+                      coincidencias: 1,
+                      creditos: [resultado.credito]
+                  };
+              } else {
+                  acumulador[ficha.clavePrincipal].coincidencias++;
+                  acumulador[ficha.clavePrincipal].creditos.push(resultado.credito);
+              }
+              return acumulador;
+          }, {});
+          
+          const resultadoArraySubtitulos = Object.keys(agrupadoSubtitulos).map(clavePrincipal => {
+              return agrupadoSubtitulos[clavePrincipal];
+          });
+          
+          const resultadoArrayCreditos = Object.keys(agrupadoCreditos).map(clavePrincipal => {
+              return agrupadoCreditos[clavePrincipal];
+          });
+          
+          const resultadoFinal = resultadoArraySubtitulos.map(subtitulo => {
+              const coincidencias = subtitulo.coincidencias;
+              const ficha = subtitulo.ficha;
+              const creditos = resultadoArrayCreditos.find(credito => credito.ficha.clavePrincipal === ficha.clavePrincipal);
+              return { ficha, coincidencias, subtitulos: subtitulo.subtitulos, creditos: creditos ? creditos.creditos : [] };
+          });
+          
+          const resultadoOrdenado = resultadoFinal.sort((a, b) => b.coincidencias - a.coincidencias);
+          
+          const skip = (Number(page) - 1) * Number(limit);
+          const resultadosPaginados = resultadoOrdenado.slice(skip, skip + limit);
+          
+          return {
+              data: resultadosPaginados,
+              total: resultadoOrdenado.length
+          };
+          
+          
+
+            
+
+        }
+    }
+}
+
 
 
 
