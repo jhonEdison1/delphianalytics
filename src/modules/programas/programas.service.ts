@@ -445,10 +445,11 @@ export class ProgramasService {
           const { ficha, subtitulo, credito } = resultado;
           if (!acumulador[programa.clavePrincipal]) {
             acumulador[programa.clavePrincipal] = {
-              programa,
-              fichas: [ficha],
-              subtitulos: subtitulo ? [subtitulo] : [],
-              creditos: credito ? [credito] : []
+              // programa,
+              // fichas: [ficha],
+              // subtitulos: subtitulo ? [subtitulo] : [],
+              // creditos: credito ? [credito] : []
+              ficha: ficha.clavePrincipal
             };
           } else {
             acumulador[programa.clavePrincipal].fichas.push(ficha);
@@ -461,6 +462,16 @@ export class ProgramasService {
         const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
           return agrupado[clavePrincipal];
         });
+        
+
+        // return {resultadoArray}
+
+        const resultadoOrdenado2 = [];
+
+        for (let i = 0; i < resultadoArray.length; i++) {
+          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].ficha } });
+          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias};
+        }
 
          // Ordenar el array por la cantidad de subtitulos
        const resultadoOrdenado = resultadoArray.sort((a, b) => b.subtitulos - a.subtitulos);
@@ -470,9 +481,9 @@ export class ProgramasService {
        const skip = (Number(page) - 1) * Number(limit);
  
        // Paginar los resultados
-       const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
+       const resultadosPaginados = resultadoOrdenado2.slice(skip, limit);
  
-       return { resultados: resultadosPaginados, total };
+       return { data: resultadosPaginados, total };
       }
     }
   }
