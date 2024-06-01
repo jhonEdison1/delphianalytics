@@ -466,7 +466,10 @@ export class ProgramasService {
         });
         
 
-        // return {resultadoArray}
+        // return {resultadoArray}        
+        if(resultadoArray.length === 0) {
+          return { data: [], total: 0 };
+        }
         
         const fichasList = resultadoArray[0].fichas.filter((v, i, a) => a.findIndex(t => (t['clavePrincipal'] === v['clavePrincipal'])) === i);
 
