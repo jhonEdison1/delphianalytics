@@ -446,15 +446,15 @@ export class ProgramasService {
           if (!acumulador[programa.clavePrincipal]) {
             acumulador[programa.clavePrincipal] = {
               // programa,
-              // fichas: [ficha],
+              fichas: [ficha],
               // subtitulos: subtitulo ? [subtitulo] : [],
               // creditos: credito ? [credito] : []
-              ficha: ficha.clavePrincipal
+              // ficha: ficha.clavePrincipal
             };
           } else {
             acumulador[programa.clavePrincipal].fichas.push(ficha);
-            if (subtitulo) acumulador[programa.clavePrincipal].subtitulos.push(subtitulo);
-            if (credito) acumulador[programa.clavePrincipal].creditos.push(credito);
+            // if (subtitulo) acumulador[programa.clavePrincipal].subtitulos.push(subtitulo);
+            // if (credito) acumulador[programa.clavePrincipal].creditos.push(credito);
           }
           return acumulador;
         }, {});
@@ -466,22 +466,29 @@ export class ProgramasService {
 
         // return {resultadoArray}
 
+        const fichasList = resultadoArray[0].fichas;
+
+        // return {fichasList};
+
         const resultadoOrdenado2 = [];
 
-        for (let i = 0; i < resultadoArray.length; i++) {
-          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].ficha } });
-          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias};
+        for (let i = 0; i < fichasList.length; i++) {
+          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: fichasList[i].clavePrincipal } });
+          resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: fichasList[i].coincidencias};
         }
 
+        
          // Ordenar el array por la cantidad de subtitulos
-       const resultadoOrdenado = resultadoArray.sort((a, b) => b.subtitulos - a.subtitulos);
- 
-       // Obtener el total de resultados
+       const resultadoOrdenado = fichasList.sort((a, b) => b.subtitulos - a.subtitulos);
+        
+      //  return {resultadoOrdenado}
+       // Obtener el total de resultadoscarlos
        const total = resultadoOrdenado.length;
        const skip = (Number(page) - 1) * Number(limit);
+        const limite = skip + Number(limit);
  
        // Paginar los resultados
-       const resultadosPaginados = resultadoOrdenado2.slice(skip, limit);
+       const resultadosPaginados = resultadoOrdenado.slice(skip, limite);
  
        return { data: resultadosPaginados, total };
       }
