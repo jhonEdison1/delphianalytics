@@ -414,6 +414,8 @@ export class ProgramasService {
           order: { [criterio]: orden }
         });
 
+        // console.log(totaltemporal);
+
         // return fichas;
 
         const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
@@ -465,8 +467,8 @@ export class ProgramasService {
         
 
         // return {resultadoArray}
-
-        const fichasList = resultadoArray[0].fichas;
+        
+        const fichasList = resultadoArray[0].fichas.filter((v, i, a) => a.findIndex(t => (t['clavePrincipal'] === v['clavePrincipal'])) === i);
 
         // return {fichasList};
 
