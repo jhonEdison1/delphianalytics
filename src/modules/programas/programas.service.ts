@@ -286,163 +286,196 @@ export class ProgramasService {
     let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
     if (palabraClave === '') {
-        if (year.length !== 4) {
-            year = "";
+      if (year.length !== 4) {
+        year = "";
 
-            const [fichas, total] = await this.fichaRepository.findAndCount({
-                where: { programa: programa, fechaEmision: year },
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { [criterio]: orden }
-            });
-            return {
-                data: fichas,
-                total
-            };
-        } else {
-            year = '/' + year;
-            const [fichas, total] = await this.fichaRepository.findAndCount({
-                where: { programa: programa, fechaEmision: Like(`%${year}`) },
-                skip: (page - 1) * limit,
-                take: limit,
-                order: { [criterio]: orden }
-            });
-            return {
-                data: fichas,
-                total
-            };
-        }
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: year },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      } else {
+        year = '/' + year;
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: Like(`%${year}`) },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      }
 
     } else {
-        const palabras = palabraClave.split(" ");
-        const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
-        palabraClave = fraseFormateada;
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
 
-        if (year.length !== 4) {
-            year = "";
-            const [fichas, total] = await this.fichaRepository.findAndCount({
-                where: { programa: programa, fechaEmision: year },
-                order: { [criterio]: orden }
-            });
+      if (year.length !== 4) {
+        year = "";
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: year },
+          order: { [criterio]: orden }
+        });
 
-            const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
-            subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-            subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
-            const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
-            creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-            creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
+        creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
 
-            const [subtitulos, creditos] = await Promise.all([
-                subtituloQuery.getMany(),
-                creditoQuery.getMany()
-            ]);
+        const [subtitulos, creditos] = await Promise.all([
+          subtituloQuery.getMany(),
+          creditoQuery.getMany()
+        ]);
 
-            const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
-                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
-                return { ficha, subtitulo };
-            }));
+        const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
+          const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
+          return { ficha, subtitulo };
+        }));
 
-            const resultadosCreditos = await Promise.all(creditos.map(async credito => {
-                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
-                return { ficha, credito };
-            }));
+        const resultadosCreditos = await Promise.all(creditos.map(async credito => {
+          const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
+          return { ficha, credito };
+        }));
 
-            // Procesa los resultados y devuelve el resultado paginado
+        // Procesa los resultados y devuelve el resultado paginado
 
-        } else {
-            year = '/' + year;
-            const [fichas, total] = await this.fichaRepository.findAndCount({
-                where: { programa: programa, fechaEmision: Like(`%${year}`) },
-                order: { [criterio]: orden }
-            });
+        const agrupadoSubtitulos = resultadosSubtitulos.reduce((acumulador, resultado) => {
+          const { ficha } = resultado;
+          if (!acumulador[ficha.clavePrincipal]) {
+            acumulador[ficha.clavePrincipal] = {
+              ficha,
+              coincidencias: 1,
+              subtitulos: [resultado.subtitulo]
+            };
+          } else {
+            acumulador[ficha.clavePrincipal].coincidencias++;
+            acumulador[ficha.clavePrincipal].subtitulos.push(resultado.subtitulo);
+          }
+          return acumulador;
+        }, {});
 
-            const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
-            subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-            subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        const agrupadoCreditos = resultadosCreditos.reduce((acumulador, resultado) => {
+          const { ficha } = resultado;
+          if (!acumulador[ficha.clavePrincipal]) {
+            acumulador[ficha.clavePrincipal] = {
+              ficha,
+              coincidencias: 1,
+              creditos: [resultado.credito]
+            };
+          } else {
+            acumulador[ficha.clavePrincipal].coincidencias++;
+            acumulador[ficha.clavePrincipal].creditos.push(resultado.credito);
+          }
+          return acumulador;
+        }, {});
 
-            const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
-            creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-            creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+        const resultadoArraySubtitulos = Object.keys(agrupadoSubtitulos).map(clavePrincipal => {
+          return agrupadoSubtitulos[clavePrincipal];
+        });
 
-            const [subtitulos, creditos] = await Promise.all([
-                subtituloQuery.getMany(),
-                creditoQuery.getMany()
-            ]);
+        const resultadoArrayCreditos = Object.keys(agrupadoCreditos).map(clavePrincipal => {
+          return agrupadoCreditos[clavePrincipal];
+        });
 
-            const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
-                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
-                return { ficha, subtitulo };
-            }));
+        const resultadoFinal = resultadoArraySubtitulos.map(subtitulo => {
+          const coincidencias = subtitulo.coincidencias;
+          const ficha = subtitulo.ficha;
+          const creditos = resultadoArrayCreditos.find(credito => credito.ficha.clavePrincipal === ficha.clavePrincipal);
+          return { ficha, coincidencias, subtitulos: subtitulo.subtitulos, creditos: creditos ? creditos.creditos : [] };
+        });
 
-            const resultadosCreditos = await Promise.all(creditos.map(async credito => {
-                const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
-                return { ficha, credito };
-            }));
+        const resultadoOrdenado = resultadoFinal.sort((a, b) => b.coincidencias - a.coincidencias);
 
-            // Procesa los resultados y devuelve el resultado paginado
+        const skip = (Number(page) - 1) * Number(limit);
 
-            const agrupadoSubtitulos = resultadosSubtitulos.reduce((acumulador, resultado) => {
-              const { ficha } = resultado;
-              if (!acumulador[ficha.clavePrincipal]) {
-                  acumulador[ficha.clavePrincipal] = {
-                      ficha,
-                      coincidencias: 1,
-                      subtitulos: [resultado.subtitulo]
-                  };
-              } else {
-                  acumulador[ficha.clavePrincipal].coincidencias++;
-                  acumulador[ficha.clavePrincipal].subtitulos.push(resultado.subtitulo);
-              }
-              return acumulador;
-          }, {});
-          
-          const agrupadoCreditos = resultadosCreditos.reduce((acumulador, resultado) => {
-              const { ficha } = resultado;
-              if (!acumulador[ficha.clavePrincipal]) {
-                  acumulador[ficha.clavePrincipal] = {
-                      ficha,
-                      coincidencias: 1,
-                      creditos: [resultado.credito]
-                  };
-              } else {
-                  acumulador[ficha.clavePrincipal].coincidencias++;
-                  acumulador[ficha.clavePrincipal].creditos.push(resultado.credito);
-              }
-              return acumulador;
-          }, {});
-          
-          const resultadoArraySubtitulos = Object.keys(agrupadoSubtitulos).map(clavePrincipal => {
-              return agrupadoSubtitulos[clavePrincipal];
-          });
-          
-          const resultadoArrayCreditos = Object.keys(agrupadoCreditos).map(clavePrincipal => {
-              return agrupadoCreditos[clavePrincipal];
-          });
-          
-          const resultadoFinal = resultadoArraySubtitulos.map(subtitulo => {
-              const coincidencias = subtitulo.coincidencias;
-              const ficha = subtitulo.ficha;
-              const creditos = resultadoArrayCreditos.find(credito => credito.ficha.clavePrincipal === ficha.clavePrincipal);
-              return { ficha, coincidencias, subtitulos: subtitulo.subtitulos, creditos: creditos ? creditos.creditos : [] };
-          });
-          
-          const resultadoOrdenado = resultadoFinal.sort((a, b) => b.coincidencias - a.coincidencias);
-          
-          const skip = (Number(page) - 1) * Number(limit);
-          const resultadosPaginados = resultadoOrdenado.slice(skip, skip + limit);
-          
-          return {
-              data: resultadosPaginados,
-              total: resultadoOrdenado.length
-          };
-          
-          
+        let result: any = parseInt(skip.toString()) + parseInt(limit.toString());
 
-            
+        const resultadosPaginados = resultadoOrdenado.slice(skip, result);
 
-        }
+        return {
+          data: resultadosPaginados,
+          total: resultadoOrdenado.length
+        };
+
+      } else {
+        year = '/' + year;
+        const [fichas, totaltemporal] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: Like(`%${year}`) },
+          order: { [criterio]: orden }
+        });
+
+        // return fichas;
+
+        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
+        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+
+        const creditoQuery = this.creditoRepository.createQueryBuilder('credito');
+        creditoQuery.where('credito.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
+        creditoQuery.andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+
+        const [subtitulos, creditos] = await Promise.all([
+          subtituloQuery.getMany(),
+          creditoQuery.getMany()
+        ]);
+
+        //return {aqui: creditos};
+
+        const resultadosSubtitulos = await Promise.all(subtitulos.map(async subtitulo => {
+          const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: subtitulo.id_ficha } });
+          return { ficha, subtitulo, credito: null };
+        }));
+
+        const resultadosCreditos = await Promise.all(creditos.map(async credito => {
+          const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: credito.id_ficha } });
+          return { ficha, credito, subtitulo: null};
+        }));
+
+        const agrupado = resultadosSubtitulos.concat(resultadosCreditos).reduce((acumulador, resultado) => {
+          const { ficha, subtitulo, credito } = resultado;
+          if (!acumulador[programa.clavePrincipal]) {
+            acumulador[programa.clavePrincipal] = {
+              programa,
+              fichas: [ficha],
+              subtitulos: subtitulo ? [subtitulo] : [],
+              creditos: credito ? [credito] : []
+            };
+          } else {
+            acumulador[programa.clavePrincipal].fichas.push(ficha);
+            if (subtitulo) acumulador[programa.clavePrincipal].subtitulos.push(subtitulo);
+            if (credito) acumulador[programa.clavePrincipal].creditos.push(credito);
+          }
+          return acumulador;
+        }, {});
+
+        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
+          return agrupado[clavePrincipal];
+        });
+
+         // Ordenar el array por la cantidad de subtitulos
+       const resultadoOrdenado = resultadoArray.sort((a, b) => b.subtitulos - a.subtitulos);
+ 
+       // Obtener el total de resultados
+       const total = resultadoOrdenado.length;
+       const skip = (Number(page) - 1) * Number(limit);
+ 
+       // Paginar los resultados
+       const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
+ 
+       return { resultados: resultadosPaginados, total };
+      }
     }
-}
+  }
 
 
 
@@ -942,7 +975,7 @@ export class ProgramasService {
     const resultadosPaginados = resultadoOrdenado.slice(skip, limit);
 
     return { resultados: resultadosPaginados, total };
-}
+  }
 
 
 
