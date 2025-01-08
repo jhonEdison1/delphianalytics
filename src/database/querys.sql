@@ -1,5 +1,5 @@
 
-ALTER DATABASE delphi SET search_path = delphi, public;
+ALTER DATABASE ccbm_transcripcion SET search_path = ccbm_transcripcion, public;
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
@@ -15,7 +15,7 @@ CREATE INDEX idx_tag_texto_gin ON tags USING gin(to_tsvector('spanish', "textoTa
 
 
 /*ignorar si no es necesario*/
-ALTER TABLE delphi.nombre_de_tabla SET SCHEMA public;  /*hacer esto con todas las tablas
+ALTER TABLE ccbm_transcripcion.nombre_de_tabla SET SCHEMA public;  /*hacer esto con todas las tablas
 
 
 

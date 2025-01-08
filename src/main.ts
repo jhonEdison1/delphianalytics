@@ -9,7 +9,7 @@ async function bootstrap() {
   //establecer limite de carga de archivos
 
   app.enableCors();
-  app.setGlobalPrefix("delphi");
+  app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe(
     {
       //whitelist: true,
@@ -21,7 +21,7 @@ async function bootstrap() {
   ));
 
 
-  const config = new DocumentBuilder().setTitle('Admin Tenis API').setDescription('The Admind Tenis API description').setVersion('1.0').addTag('adminTenis').build();
+  const config = new DocumentBuilder().setTitle('FreedomCenter App').setDescription('The FreedomCenter App API description').setVersion('1.0').addTag('freedomCenter').build();
 
   const document = SwaggerModule.createDocument(app, config);
 
