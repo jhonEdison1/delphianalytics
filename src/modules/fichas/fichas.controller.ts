@@ -87,5 +87,8 @@ export class FichasController {
   }
 
 
-  
+  @Get('all-fichas-data')
+  async getAllFichasData() {
+    return this.fichasService.getAllFichasData();
+  }
 }

@@ -2,9 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json } from 'stream/consumers';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  //establecer limite de carga de archivos
+
   app.enableCors();
   app.setGlobalPrefix("delphi");
   app.useGlobalPipes(new ValidationPipe(

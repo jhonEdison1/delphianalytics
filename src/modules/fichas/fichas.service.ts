@@ -242,4 +242,17 @@ export class FichasService {
     }
   }
 
+
+  async getAllFichasData(){
+    const [fichas, total] = await this.fichaRepository.findAndCount(
+      {
+        select: ['clavePrincipal', 'codigoArchivo']
+      }
+    );
+
+    return {
+      data: fichas,
+      total
+    }
+  }
 }

@@ -2,17 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { CreateSubtituloDto } from './dto/create-subtitulo.dto';
 import { UpdateSubtituloDto } from './dto/update-subtitulo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getConnection } from 'typeorm';
+import { Repository } from 'typeorm';
 import { parse } from 'csv-parse';
 import { Subtitulo } from './entities/subtitulo.entity';
 import { handleDbError } from 'src/utils/error.message';
 import { CsvConverter } from 'src/utils/csv.converter';
+import { Ficha } from '../fichas/entities/ficha.entity';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class SubtitulosService {
 
   constructor(
-    @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>
+    @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
+    @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
   ) { }
 
 
@@ -38,17 +41,15 @@ export class SubtitulosService {
     try {
       
       const csvString = fileBuffer.toString('utf-8');
-      const jsonData = await CsvConverter(csvString);    
+      const jsonData = await CsvConverter(csvString);
      
 
       const entidadesSubtitulos = await Promise.all(jsonData.map(async (subtitulo) => {
-       // console.log(subtitulo)
-       
-        const nuevoSubtitulo = new Subtitulo();  
-        //ajustar si trae Clave principál en blanco generar un id aleatorio unico de tipo uuid     
+        const nuevoSubtitulo = new Subtitulo();
+          //ajustar si trae Clave principál en blanco generar un id aleatorio unico de tipo uuid     
         nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal ? subtitulo.ClavePrincipal : crypto.randomUUID();
         nuevoSubtitulo.id_ficha = subtitulo['ID Ficha'];
-        nuevoSubtitulo.linea = subtitulo['Línea'];
+        nuevoSubtitulo.linea = parseInt(subtitulo['Línea']);
         nuevoSubtitulo.tiempo_Inicio = subtitulo['Tiempo Inicio'];
         nuevoSubtitulo.tiempo_Fin = subtitulo['Tiempo Fin'];
         nuevoSubtitulo.texto = await this.escaparCaracteres(subtitulo.Texto);
@@ -58,19 +59,23 @@ export class SubtitulosService {
 
       // console.log(entidadesSubtitulos)
 
-      //insertar uno por uno
+      //insertar uno por uno los subtitulos
+      let count = 0;
+      // let noUsables: any[] = [];
       for (let index = 0; index < entidadesSubtitulos.length; index++) {
-       
         const element = entidadesSubtitulos[index];
-        if (!element.clavePrincipal || !element.id_ficha || element.clavePrincipal == '' || element.id_ficha == '' ) {
+        if (!element.clavePrincipal || !element.id_ficha || element.clavePrincipal == '' || element.id_ficha == '' || (typeof element.linea !== 'number') || Number.isNaN(element.linea) || element.tiempo_Inicio == '' || element.tiempo_Fin == '' || element.texto == '') {
+          // noUsables.push(element);
           continue; 
         }
+        count++;
+
         // console.log('elemento', element)
         await this.subtituloRepository.save(element);
       }
   
       // await this.subtituloRepository.save(entidadesSubtitulos);
-      return { message: 'Archivo procesado correctamente' }
+      return { message: 'Archivo procesado correctamente', total: count};
 
 
 
@@ -93,11 +98,12 @@ export class SubtitulosService {
   async findAll() {
     //find all and count
 
-    const [subtitulos, total] = await this.subtituloRepository.findAndCount();
+    const [subtitulos, total] = await this.subtituloRepository.findAndCount({
+      select: ['clavePrincipal', 'id_ficha', 'linea', 'tiempo_Inicio', 'tiempo_Fin', 'textoOriginal']
+    });
 
     return {
-      data: subtitulos,
-      total
+      subtitulos
     };
   }
 
@@ -116,5 +122,60 @@ export class SubtitulosService {
     return result;
   }
 
+  async getSubtituloPorCodigoArchivo(request: any) {
+    const { codigoArchivo } = request;
 
+    const {clavePrincipal} = await this.fichaRepository.findOne({ where: { codigoArchivo: codigoArchivo } });
+    
+    const [subtitulos, total] = await this.subtituloRepository.findAndCount({ where: { id_ficha: clavePrincipal } });
+
+    //eliminar atributos innecesarios
+    subtitulos.forEach((subtitulo) => {
+      delete subtitulo.texto;
+    });
+
+    return {
+      subtitulos,
+      total
+    };
+  }
+
+  async getAllSubtitulosWithMorethanNCaracters(nCaracters: string){
+    const nchars = parseInt(nCaracters);
+    const [subtitulos, totalSubtitulos] = await this.subtituloRepository.createQueryBuilder('subtitulo')
+    .leftJoinAndSelect('subtitulo.ficha', 'ficha')
+    .select(['subtitulo.clavePrincipal', 'subtitulo.id_ficha', 'ficha.codigoArchivo'])
+    .where('CHAR_LENGTH(subtitulo.textoOriginal) > :nchars', { nchars })
+    .getManyAndCount();
+
+
+    subtitulos.forEach((subtitulo:any) => {
+      subtitulo.codigoArchivo = subtitulo.ficha.codigoArchivo;
+      delete subtitulo.ficha;
+    });
+
+    // eliminar elementos repetidos
+    const uniqueSubtitulos = await Promise.all(subtitulos.filter((subtitulo, index, self) => hash[subtitulo.id_ficha] ? false : (hash[subtitulo.id_ficha] = true)));
+
+    return {
+      data: uniqueSubtitulos,
+      total: totalSubtitulos
+    };
+  }
+
+  async getSubtitulosRepetidosPorTextoOriginal(){
+
+    //obtener subtitulos repetidos con su clavePrincipal y cantidad de repeticiones
+    const subtitulosRepetidos = await this.subtituloRepository.createQueryBuilder('subtitulo')
+    .select(['subtitulo.textoOriginal', 'subtitulo.tiempo_Fin', 'subtitulo.id_ficha'])
+      .addSelect('COUNT(subtitulo.clavePrincipal)', 'count')
+      .groupBy('subtitulo.textoOriginal')
+      .addGroupBy('subtitulo.tiempo_Fin')
+      .addGroupBy('subtitulo.id_ficha')
+      .having('COUNT(subtitulo.clavePrincipal) > 1')
+      .getRawMany();
+
+
+    return subtitulosRepetidos;
+  }
 }
