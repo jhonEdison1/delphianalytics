@@ -33,7 +33,7 @@ export class ProgramasService {
       const entidadesProgramas = jsonData.map((programa) => {
         // console.log(programa)
         const nuevoPrograma = new Programa();
-        nuevoPrograma.clavePrincipal = programa.ClavePrincipal;
+        // nuevoPrograma.clavePrincipal = programa.ClavePrincipal;
         nuevoPrograma.titulo = programa.Titulo;
         nuevoPrograma.criterio = programa.Criterio;
         nuevoPrograma.genero = programa.Genero;

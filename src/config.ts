@@ -21,6 +21,9 @@ export default registerAs("config", () => {
             jwtForgotPasswordSecret: process.env.JWT_FORGOT_PASSWORD_SECRET,
             jwtForgotPasswordExpiresTime: process.env.JWT_FORGOT_PASSWORD_EXPIRES_TIME,
         },
+        calidad: {
+            host: process.env.CALIDAD_HOST,
+        }
     }
 
 });

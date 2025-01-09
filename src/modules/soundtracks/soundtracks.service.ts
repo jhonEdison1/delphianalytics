@@ -38,7 +38,7 @@ export class SoundtracksService {
            
             const entidadesSoundtracks = await Promise.all(jsonData.map(async (soundtrack) => {
                 const nuevoSoundtrack = new Soundtrack();
-                nuevoSoundtrack.clavePrincipal = soundtrack.ClavePrincipal;
+                // nuevoSoundtrack.clavePrincipal = soundtrack.ClavePrincipal;
                 nuevoSoundtrack.id_ficha = soundtrack['ID Ficha'];
                 nuevoSoundtrack.principal = soundtrack.Principal;
                 nuevoSoundtrack.título = soundtrack.Título;

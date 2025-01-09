@@ -1,9 +1,9 @@
 import { Ficha } from "src/modules/fichas/entities/ficha.entity";
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index, IndexOptions } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index, IndexOptions, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'creditos' })
 export class Credito {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     clavePrincipal: string;
 
     @ManyToOne(() => Ficha)

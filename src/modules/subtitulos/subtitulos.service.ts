@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CreateSubtituloDto } from './dto/create-subtitulo.dto';
 import { UpdateSubtituloDto } from './dto/update-subtitulo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,9 @@ import { handleDbError } from 'src/utils/error.message';
 import { CsvConverter } from 'src/utils/csv.converter';
 import { Ficha } from '../fichas/entities/ficha.entity';
 import { hash } from 'bcrypt';
+import config from 'src/config';
+import { ConfigType } from '@nestjs/config';
+import axios from 'axios';
 
 @Injectable()
 export class SubtitulosService {
@@ -16,6 +19,8 @@ export class SubtitulosService {
   constructor(
     @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
     @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
+    @Inject(config.KEY) private readonly configSerivce: ConfigType<typeof config>,
+
   ) { }
 
 
@@ -47,7 +52,7 @@ export class SubtitulosService {
       const entidadesSubtitulos = await Promise.all(jsonData.map(async (subtitulo) => {
         const nuevoSubtitulo = new Subtitulo();
           //ajustar si trae Clave principál en blanco generar un id aleatorio unico de tipo uuid     
-        nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal ? subtitulo.ClavePrincipal : crypto.randomUUID();
+        // nuevoSubtitulo.clavePrincipal = subtitulo.ClavePrincipal ? subtitulo.ClavePrincipal : crypto.randomUUID();
         nuevoSubtitulo.id_ficha = subtitulo['ID Ficha'];
         nuevoSubtitulo.linea = parseInt(subtitulo['Línea']);
         nuevoSubtitulo.tiempo_Inicio = subtitulo['Tiempo Inicio'];
@@ -87,6 +92,31 @@ export class SubtitulosService {
 
     }
 
+  }
+
+  async subirSubtitulos(idFicha: string, idSesion: string){
+    try {
+      const subtitulos = await this.getSubtitulosPorFicha(idSesion);
+
+      const entidadesSubtitulos = await Promise.all(subtitulos.data.map(async (subtitulo) => {
+        const newSubtitulo = new Subtitulo();
+
+        newSubtitulo.texto = await this.escaparCaracteres(subtitulo.textoCorregido);
+        newSubtitulo.id_ficha = idFicha;
+        newSubtitulo.textoOriginal = subtitulo.textoCorregido;
+        newSubtitulo.linea = subtitulo.minuto;
+        newSubtitulo.tiempo_Inicio = subtitulo.start_time;
+        newSubtitulo.tiempo_Fin = subtitulo.end_time;
+
+        return newSubtitulo;
+      }));
+
+      return entidadesSubtitulos;
+
+      // return subtitulos;
+    } catch (error) {
+      return { message: 'Error al subir los subtitulos' }
+    }
   }
 
   async escaparCaracteres(texto) {
@@ -177,5 +207,50 @@ export class SubtitulosService {
 
 
     return subtitulosRepetidos;
+  }
+
+  async getSubtitulosPorFichaUnidos(idFicha: string) {
+    try {
+      const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: idFicha } });
+
+      if(!ficha){
+        return { message: 'Ficha no encontrada' }
+      }
+
+      //obtener subtitulos de la ficha
+      const subtitulos = await this.subtituloRepository.find({ where: { ficha: ficha } });
+
+      //unir los subtitulos en un solo texto
+      const textoUnido = subtitulos.map(subtitulo => subtitulo.textoOriginal).join(' ');
+
+      return textoUnido;
+
+    } catch (error) {
+      console.log('Error al traer los subtitulos de la ficha', error)
+      throw error
+    }
+  }
+
+  //-----------------------------------
+  // axios
+  //-----------------------------------
+
+  async getSubtitulosPorFicha(idFicha: string) {
+    try {
+      const host = this.configSerivce.calidad.host;
+
+      const response = await axios.get(`${host}/sesiones/transcripcionesSesion`, {
+        params: {
+          idSesion: idFicha
+        }
+      });
+
+      const data = response.data;
+
+      return data;
+    } catch (error) {
+      console.log('Error al traer los subtitulos de la ficha', error)
+      throw error
+    }
   }
 }

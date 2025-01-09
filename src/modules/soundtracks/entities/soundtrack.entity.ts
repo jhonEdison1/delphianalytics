@@ -1,9 +1,9 @@
 import { Ficha } from "src/modules/fichas/entities/ficha.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({ name: "sountracks" })
 export class Soundtrack {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     clavePrincipal: string;
 
     @ManyToOne(() => Ficha)

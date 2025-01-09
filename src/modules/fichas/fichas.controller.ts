@@ -27,6 +27,11 @@ export class FichasController {
     return await this.fichasService.subirSinopsisArchivo(fileBuffer);   
   }
 
+  @Post('/actualizarSinopsis')
+  async actualizarSinopsis(@Body() body: any) {
+    return await this.fichasService.actualizarSinopsis(body);
+  }
+
 
   @Get('/paginadas')
   @ApiQuery({ name: 'page', type: Number, required: true })

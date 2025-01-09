@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, Query } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
@@ -17,6 +17,14 @@ export class TagsController {
     // Procesar el archivo y enviarlo al servicio de Ficha
     const fileBuffer = archivo.buffer;
     return await this.tagsService.procesarArchivo(fileBuffer);   
+  }
+
+  @Post('/subirTags')
+  async subirTags(
+    @Query('idFicha') idFicha: string,
+    @Body() body: any
+  ) {
+    return await this.tagsService.subirTags(idFicha, body);
   }
 
   @Post('/create')

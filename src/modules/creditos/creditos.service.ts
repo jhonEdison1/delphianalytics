@@ -24,7 +24,7 @@ export class CreditosService {
         // console.log(credito['Clave Principal']);
         
          const nuevoCredito = new Credito();       
-         nuevoCredito.clavePrincipal = credito['Clave Principal'];
+        //  nuevoCredito.clavePrincipal = credito['Clave Principal'];
          nuevoCredito.id_ficha = credito['ID Ficha'];
          nuevoCredito.cargo = credito['Cargo'];
          nuevoCredito.persona = credito['Persona']; 

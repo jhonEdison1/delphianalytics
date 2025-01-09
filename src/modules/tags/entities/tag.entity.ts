@@ -1,5 +1,5 @@
 import { Ficha } from "src/modules/fichas/entities/ficha.entity";
-import { Column, Entity, Index, IndexOptions, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, IndexOptions, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 
 
 // {
@@ -12,7 +12,7 @@ import { Column, Entity, Index, IndexOptions, JoinColumn, ManyToOne, PrimaryColu
 @Entity({ name: "tags" })
 export class Tag {
 
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     clavePrincipal: string;
 
     @ManyToOne(() => Ficha)

@@ -27,7 +27,7 @@ export class PietajesService {
    // return jsonData
     const entidadesPietajes = await Promise.all(jsonData.map(async (pietaje) => {
       const nuevoPietaje = new Pietaje();
-      nuevoPietaje.clavePrincipal = pietaje['Clave Principal'];
+      // nuevoPietaje.clavePrincipal = pietaje['Clave Principal'];
       nuevoPietaje.id_ficha = pietaje['ID Ficha'];
       nuevoPietaje.inicio = pietaje.Inicio;
       nuevoPietaje.fin = pietaje.Fin;

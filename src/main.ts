@@ -28,6 +28,6 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   console.log('Api Corriendo correctamente',process.env.NODE_ENV) 
-  await app.listen(3000);
+  await app.listen(4000);
 }
 bootstrap();

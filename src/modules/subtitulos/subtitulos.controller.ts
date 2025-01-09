@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { SubtitulosService } from './subtitulos.service';
 import { CreateSubtituloDto } from './dto/create-subtitulo.dto';
 import { UpdateSubtituloDto } from './dto/update-subtitulo.dto';
@@ -23,6 +23,14 @@ export class SubtitulosController {
     // Procesar el archivo y enviarlo al servicio de Ficha
     const fileBuffer = archivo.buffer;
     return await this.subtitulosService.procesarArchivo(fileBuffer);   
+  }
+
+  @Get('/subirSubtitulos')
+  async subirSubtitulos(
+    @Query('idFicha') idFicha: string,
+    @Query('idSesion') idSesion: string
+  ) {
+    return await this.subtitulosService.subirSubtitulos(idFicha, idSesion);
   }
 
   @Get('/findAll')
@@ -55,6 +63,14 @@ export class SubtitulosController {
   async getDuplicadosPorTexto(
   ) {      
     return await this.subtitulosService.getSubtitulosRepetidosPorTextoOriginal();
+
+  }
+
+  @Get('/subtitulosUnidos')
+  async getSubtitulosUnidos(
+    @Query('idFicha') idFicha: string
+  ) {      
+    return await this.subtitulosService.getSubtitulosPorFichaUnidos(idFicha);
 
   }
 }

@@ -33,7 +33,7 @@ export class FichasService {
       const entidadesFichas  = jsonData.map((ficha) => {
         
         const nuevaFicha = new Ficha();
-        nuevaFicha.clavePrincipal = ficha.ClavePrincipal;
+        // nuevaFicha.clavePrincipal = ficha.ClavePrincipal;
         nuevaFicha.nombreArchivo = ficha['Nombre del Archivo'];
         nuevaFicha.codigoArchivo = ficha['Código del Archivo']; 
         nuevaFicha.id_programa = ficha['ID Programa'];     
@@ -242,6 +242,25 @@ export class FichasService {
     }
   }
 
+  async actualizarSinopsis(request: any){
+    try {
+      const { idFicha, sinopsis } = request;
+
+      const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: idFicha} });
+
+      if(!ficha){
+        return { message: 'Ficha no encontrada' }
+      }
+
+      ficha.sinopsis = sinopsis;
+      await this.fichaRepository.save(ficha);
+
+      return { message: 'Sinopsis actualizada correctamente', ficha }
+
+    } catch (error) {
+      return handleDbError(error);
+    }
+  }
 
   async getAllFichasData(){
     const [fichas, total] = await this.fichaRepository.findAndCount(
