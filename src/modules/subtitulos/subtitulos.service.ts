@@ -12,6 +12,7 @@ import { hash } from 'bcrypt';
 import config from 'src/config';
 import { ConfigType } from '@nestjs/config';
 import axios from 'axios';
+import { OpenaiService } from '../openai/openai.service';
 
 @Injectable()
 export class SubtitulosService {
@@ -20,7 +21,7 @@ export class SubtitulosService {
     @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
     @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
     @Inject(config.KEY) private readonly configSerivce: ConfigType<typeof config>,
-
+    private readonly openaiService: OpenaiService
   ) { }
 
 
@@ -98,7 +99,12 @@ export class SubtitulosService {
     try {
       const subtitulos = await this.getSubtitulosPorFicha(idSesion);
 
-      const entidadesSubtitulos = await Promise.all(subtitulos.data.map(async (subtitulo) => {
+      return {data: subtitulos.data};
+
+      const mergedSubtitulos = this.mergeData(subtitulos.data);
+
+      const entidadesSubtitulos = await Promise.all(mergedSubtitulos.map(async (subtitulo) => {
+        
         const newSubtitulo = new Subtitulo();
 
         newSubtitulo.texto = await this.escaparCaracteres(subtitulo.textoCorregido);
@@ -111,7 +117,11 @@ export class SubtitulosService {
         return newSubtitulo;
       }));
 
-      return entidadesSubtitulos;
+      // return entidadesSubtitulos;
+
+      await this.subtituloRepository.save(entidadesSubtitulos);
+
+      return { message: 'Subtitulos subidos correctamente' };
 
       // return subtitulos;
     } catch (error) {
@@ -218,7 +228,7 @@ export class SubtitulosService {
       }
 
       //obtener subtitulos de la ficha
-      const subtitulos = await this.subtituloRepository.find({ where: { ficha: ficha } });
+      const subtitulos = await this.subtituloRepository.find({ where: { ficha: ficha }, order: { linea: 'ASC' } });
 
       //unir los subtitulos en un solo texto
       const textoUnido = subtitulos.map(subtitulo => subtitulo.textoOriginal).join(' ');
@@ -227,6 +237,60 @@ export class SubtitulosService {
 
     } catch (error) {
       console.log('Error al traer los subtitulos de la ficha', error)
+      throw error
+    }
+  }
+
+  async traducirSubtitulosFicha(id: string, idioma: string) {
+    try {
+      const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id } });
+
+      if(!ficha){
+        return { message: 'Ficha no encontrada' }
+      }
+
+      //obtener subtitulos de la ficha
+      const subtitulos = await this.subtituloRepository.find({ where: { ficha: ficha } });
+
+      //traducir los subtitulos y guardarlos en la base de datos
+      const subtitulosTraducidos = await Promise.all(subtitulos.map(async (subtitulo) => {
+        const textoTraducido = await this.openaiService.traducirTexto(subtitulo.textoOriginal, idioma);
+
+        const { ok, traduccion } = textoTraducido;
+
+        subtitulo.textoTraducido = traduccion;
+        return subtitulo;
+      }));
+
+      await this.subtituloRepository.save(subtitulosTraducidos);
+
+      return { message: 'Subtitulos traducidos correctamente' };
+    } catch (error) {
+      console.log('Error al traducir los subtitulos de la ficha', error)
+      throw error;
+    }
+  }
+
+  async traducirData(data: any, idioma: string) {
+    try {
+      const subtitulosTraducidos = await Promise.all(data.map(async (subtitulo) => {
+
+        if(subtitulo.textoCorregido === ''){
+          subtitulo.textoTraducido = '';
+          return subtitulo;
+        }
+
+        const textoTraducido = await this.openaiService.traducirTexto(subtitulo.textoCorregido, idioma);
+
+        const { ok, traduccion } = textoTraducido;
+
+        subtitulo.textoTraducido = traduccion;
+        return subtitulo;
+      }));
+
+      return subtitulosTraducidos;
+    } catch (error) {
+      console.log('Error al traducir los subtitulos de la ficha', error)
       throw error
     }
   }
@@ -252,5 +316,34 @@ export class SubtitulosService {
       console.log('Error al traer los subtitulos de la ficha', error)
       throw error
     }
+  }
+
+
+  mergeData(data: any): any {
+    const result = [];
+
+    for(let i = 0; i < data.length; i += 2){
+        const first = data[i];
+        const second = data[i + 1];
+
+        if(!second){
+            result.push({
+                textoCorregido: first.textoCorregido,
+                minuto: (i / 2) + 1,
+                start_time: first.start_time,
+                end_time: first.end_time
+            });
+        }else{
+            result.push({
+                // textoTranscripcion: first.textoTranscripcion + ' ' + second.textoTranscripcion,
+                textoCorregido: first.textoCorregido + ' ' + second.textoCorregido,
+                minuto: (i / 2) + 1,
+                start_time: first.start_time,
+                end_time: second.end_time
+            });
+        }
+    }
+
+    return result;
   }
 }

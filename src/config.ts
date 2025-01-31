@@ -23,6 +23,10 @@ export default registerAs("config", () => {
         },
         calidad: {
             host: process.env.CALIDAD_HOST,
+        },
+        openAi: {
+          token: process.env.OPEN_AI_API_KEY,
+          active: process.env.OPEN_AI_ACTIVE,
         }
     }
 

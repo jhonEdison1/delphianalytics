@@ -38,4 +38,7 @@ export class Subtitulo {
 
     @Column({ nullable: true })
     textoOriginal: string; // Campo para almacenar el texto sin procesar
+
+    @Column({ nullable: true })
+    textoTraducido: string; // Campo para almacenar el texto traducido
 }

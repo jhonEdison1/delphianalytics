@@ -13,6 +13,7 @@ import { TagsModule } from './modules/tags/tags.module';
 import { PietajesModule } from './modules/pietajes/pietajes.module';
 import { SoundtracksModule } from './modules/soundtracks/soundtracks.module';
 import { CreditosModule } from './modules/creditos/creditos.module';
+import { OpenaiModule } from './modules/openai/openai.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { CreditosModule } from './modules/creditos/creditos.module';
     TagsModule,
     PietajesModule,
     SoundtracksModule,
-    CreditosModule  
+    CreditosModule,
+    OpenaiModule
   ],
   controllers: [AppController],
   providers: [AppService],

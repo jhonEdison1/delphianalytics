@@ -71,6 +71,21 @@ export class SubtitulosController {
     @Query('idFicha') idFicha: string
   ) {      
     return await this.subtitulosService.getSubtitulosPorFichaUnidos(idFicha);
+  }
 
+  @Post('/traducir/:id')
+  async traducirSubtitulosFicha(
+    @Param('id') id: string,
+    @Body('idioma') idioma: string
+  ) {      
+    return await this.subtitulosService.traducirSubtitulosFicha(id, idioma);
+  }
+
+  @Post('/traducirData')
+  async traducirData(
+    @Body('data') data: any,
+    @Body('idioma') idioma: string
+  ){
+    return await this.subtitulosService.traducirData(data, idioma);
   }
 }
