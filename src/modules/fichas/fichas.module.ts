@@ -6,11 +6,14 @@ import { Ficha } from './entities/ficha.entity';
 import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { Credito } from '../creditos/entities/credito.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
+import { IamModule } from '../iam/iam.module';
 
 @Module({
   imports: [
     // Import the TypeOrmModule to use the Ficha entity
-     TypeOrmModule.forFeature([Ficha, Subtitulo, Tag, Credito]),
+     TypeOrmModule.forFeature([Ficha, Subtitulo, Tag, Credito, Usuario]),
+     IamModule
   ],
   controllers: [FichasController],
   providers: [FichasService],

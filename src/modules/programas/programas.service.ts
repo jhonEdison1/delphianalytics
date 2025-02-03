@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateProgramaDto } from './dto/create-programa.dto';
 import { UpdateProgramaDto } from './dto/update-programa.dto';
 import { Programa } from './entities/programa.entity';
@@ -12,6 +12,7 @@ import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Credito } from '../creditos/entities/credito.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
 
 @Injectable()
 export class ProgramasService {
@@ -22,6 +23,26 @@ export class ProgramasService {
     @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
     @InjectRepository(Credito) private creditoRepository: Repository<Credito>,
   ) { }
+
+  async create(createProgramaDto: CreateProgramaDto) {
+    const nuevoPrograma = new Programa();
+    nuevoPrograma.titulo = createProgramaDto.titulo;
+    nuevoPrograma.criterio = createProgramaDto.criterio;
+    nuevoPrograma.genero = createProgramaDto.genero;
+    nuevoPrograma.patrimonio = createProgramaDto.patrimonio;
+    nuevoPrograma.clasificacion = createProgramaDto.clasificacion;
+    nuevoPrograma.idioma = createProgramaDto.idioma;
+    nuevoPrograma.productora = createProgramaDto.productora;
+    nuevoPrograma.imagen = createProgramaDto.imagen;
+    try {
+      await this.programaRepository.save(nuevoPrograma);
+      return { message: 'Programa guardado correctamente', nuevoPrograma };
+    } catch (error) {
+      console.log(error);
+      const message = handleDbError(error);
+      return { message };
+    }
+  }
 
   async procesarArchivo(fileBuffer: Buffer) {
     try {
@@ -55,9 +76,16 @@ export class ProgramasService {
     }
   }
 
-  async getProgramasPaginated(page: number, limit: number, orden: 'ASC' | 'DESC') {
+  async getProgramasPaginated(usuario: Usuario, page: number, limit: number, orden: 'ASC' | 'DESC') {
+
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    const querySearch = usuario.rol === 'admin' ? {} : { usuarioId: usuario.id };
 
     const [programas, total] = await this.programaRepository.findAndCount({
+      where: querySearch,
       skip: (page - 1) * limit,
       take: limit,
       order: { titulo: orden }
@@ -71,8 +99,16 @@ export class ProgramasService {
   }
 
 
-  async findOne(id: string) {
-    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
+  async findOne(usuario: Usuario, id: string) {
+
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, usuarioId: usuario.id };
+
+    const programa = await this.programaRepository.findOne({ where: querySearch });
+
     const [fichas, totalFichas] = await this.fichaRepository.findAndCount({ where: { programa: programa } });
 
     const emision = fichas.map(ficha => {
@@ -97,194 +133,18 @@ export class ProgramasService {
     };
   }
 
-  /*async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha') {
+  async findFichasByProgramaAndYear(usuario: Usuario, id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
 
-    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
-
-    if (year.length !== 4) {
-      year = "";
-      const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-      const [fichas, total] = await this.fichaRepository.findAndCount({
-        where: { programa: programa, fechaEmision: year },
-        skip: (page - 1) * limit,
-        take: limit,
-        order: { [criterio]: orden }
-      });
-      return {
-        data: fichas,
-        total
-      };
-    } else {
-      year = '/' + year;
-      const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-      const [fichas, total] = await this.fichaRepository.findAndCount({
-        where: { programa: programa, fechaEmision: Like(`%${year}`) },
-        skip: (page - 1) * limit,
-        take: limit,
-        order: { [criterio]: orden }
-      });
-      return {
-        data: fichas,
-        total
-      };
+    if (!usuario) {
+      return { message: 'Usuario no encontrado' };
     }
-  }*/
 
-  /*
-  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, usuarioId: usuario.id };
 
     let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
-    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-    if (palabraClave === '') {
-      if (year.length !== 4) {
-        year = "";
 
-        const [fichas, total] = await this.fichaRepository.findAndCount({
-          where: { programa: programa, fechaEmision: year },
-          skip: (page - 1) * limit,
-          take: limit,
-          order: { [criterio]: orden }
-        });
-        return {
-          data: fichas,
-          total
-        };
-      } else {
-        year = '/' + year;
-        // const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-        const [fichas, total] = await this.fichaRepository.findAndCount({
-          where: { programa: programa, fechaEmision: Like(`%${year}`) },
-          skip: (page - 1) * limit,
-          take: limit,
-          order: { [criterio]: orden }
-        });
-        return {
-          data: fichas,
-          total
-        };
-      }
+    const programa = await this.programaRepository.findOne({ where: querySearch });
 
-    } else {
-      const palabras = palabraClave.split(" ");
-      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
-      palabraClave = fraseFormateada;
-      //si viene palabra clave, buscar todas las fichas que sean del programa y del año, luego en la colecciones de subtitulos buscar las coincidencias de la palabra clave en todos los subtitulos de cada ficha, agrupar por ficha y devolver solo las fichas que tengan coincidencias
-      if (year.length !== 4) {
-        year = "";
-        const [fichas, total] = await this.fichaRepository.findAndCount({
-          where: { programa: programa, fechaEmision: year },
-          order: { [criterio]: orden }
-        });
-
-        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
-        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
-        // Obtener los subtitulos que coinciden con la palabra clave
-        const subtitulos = await subtituloQuery
-          .getMany();
-
-
-        // return subtitulos;
-        const agrupado = subtitulos.reduce((acumulador, subtitulo) => {
-          const { id_ficha } = subtitulo;
-          if (!acumulador[id_ficha]) {
-            acumulador[id_ficha] = 1;
-          } else {
-            acumulador[id_ficha] = acumulador[id_ficha] + 1;
-          }
-          return acumulador;
-        }, {});
-
-        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
-          return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
-        });
-
-        const resultadoOrdenado2 = [];
-
-        for (let i = 0; i < resultadoArray.length; i++) {
-          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
-          resultadoOrdenado2[i] = { ...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias };
-        }
-
-        const skip = (Number(page) - 1) * Number(limit);
-
-        let result: any = parseInt(skip.toString()) + parseInt(limit.toString());
-
-        const resultadosPaginados = resultadoOrdenado2.slice(skip, result);
-
-        // const resultadosPaginados = resultadoOrdenado2.slice(skip, (skip + limit));
-
-        return {
-          data: resultadosPaginados,
-          total: resultadoOrdenado2.length
-        };
-      } else {
-
-        year = '/' + year;
-        // const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
-        const [fichas, total] = await this.fichaRepository.findAndCount({
-          where: { programa: programa, fechaEmision: Like(`%${year}`) },
-          order: { [criterio]: orden }
-        });
-
-        //return fichas
-
-        const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo');
-        subtituloQuery.where('subtitulo.id_ficha IN (:...fichas)', { fichas: fichas.map(ficha => ficha.clavePrincipal) });
-        subtituloQuery.andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
-        // Obtener los subtitulos que coinciden con la palabra clave
-        const subtitulos = await subtituloQuery
-          .getMany();
-
-        //agrupar por ficha y devolver solo las fichas que tengan coincidencias y no esten repetidas, no se devuelven los subtitulos
-
-
-
-        const agrupado = subtitulos.reduce((acumulador, subtitulo) => {
-          const { id_ficha } = subtitulo;
-          if (!acumulador[id_ficha]) {
-            acumulador[id_ficha] = 1;
-          } else {
-            acumulador[id_ficha] = acumulador[id_ficha] + 1;
-          }
-          return acumulador;
-        }, {});
-
-        //return agrupado;
-
-        const resultadoArray = Object.keys(agrupado).map(clavePrincipal => {
-          return { clavePrincipal, coincidencias: agrupado[clavePrincipal] };
-        });
-
-        //return resultadoArray;
-        //const resultadoOrdenado = resultadoArray.sort((a, b) => b.coincidencias - a.coincidencias);
-        const resultadoOrdenado2 = [];
-
-        for (let i = 0; i < resultadoArray.length; i++) {
-          resultadoOrdenado2[i] = await this.fichaRepository.findOne({ where: { clavePrincipal: resultadoArray[i].clavePrincipal } });
-          resultadoOrdenado2[i] = { ...resultadoOrdenado2[i], coincidencias: resultadoArray[i].coincidencias };
-        }
-
-        //return resultadoOrdenado2
-
-
-        const skip = (Number(page) - 1) * Number(limit);
-        let result: any = parseInt(skip.toString()) + parseInt(limit.toString());
-
-        const resultadosPaginados = resultadoOrdenado2.slice(skip, result);
-        return {
-          data: resultadosPaginados,
-          total: resultadoOrdenado2.length
-        };
-      }
-
-    }
-   }*/
-
-  async findFichasByProgramaAndYear(id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
-
-    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
-    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
     if (palabraClave === '') {
       if (year.length !== 4) {
         year = "";
@@ -314,6 +174,7 @@ export class ProgramasService {
       }
 
     } else {
+      palabraClave = palabraClave.trim();
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
@@ -348,36 +209,14 @@ export class ProgramasService {
         }));
 
         // Procesa los resultados y devuelve el resultado paginado
-
-        const agrupadoSubtitulos = resultadosSubtitulos.reduce((acumulador, resultado) => {
-          const { ficha } = resultado;
-          if (!acumulador[ficha.clavePrincipal]) {
-            acumulador[ficha.clavePrincipal] = {
-              ficha,
-              coincidencias: 1,
-              subtitulos: [resultado.subtitulo]
-            };
-          } else {
-            acumulador[ficha.clavePrincipal].coincidencias++;
-            acumulador[ficha.clavePrincipal].subtitulos.push(resultado.subtitulo);
-          }
-          return acumulador;
-        }, {});
-
         const agrupado = resultadosSubtitulos.concat(resultadosCreditos).reduce((acumulador, resultado) => {
           const { ficha, subtitulo, credito } = resultado;
           if (!acumulador[programa.clavePrincipal]) {
             acumulador[programa.clavePrincipal] = {
-              // programa,
               fichas: [ficha],
-              // subtitulos: subtitulo ? [subtitulo] : [],
-              // creditos: credito ? [credito] : []
-              // ficha: ficha.clavePrincipal
             };
           } else {
             acumulador[programa.clavePrincipal].fichas.push(ficha);
-            // if (subtitulo) acumulador[programa.clavePrincipal].subtitulos.push(subtitulo);
-            // if (credito) acumulador[programa.clavePrincipal].creditos.push(credito);
           }
           return acumulador;
         }, {});
@@ -386,17 +225,13 @@ export class ProgramasService {
           return agrupado[clavePrincipal];
         });
         
-
         // return {resultadoArray}        
         if(resultadoArray.length === 0) {
           return { data: [], total: 0 };
         }
 
-
         const fichasList = resultadoArray[0].fichas.filter((v, i, a) => a.findIndex(t => (t['clavePrincipal'] === v['clavePrincipal'])) === i);
-
         // return {fichasList};
-
         const resultadoOrdenado2 = [];
 
         for (let i = 0; i < fichasList.length; i++) {
@@ -404,20 +239,19 @@ export class ProgramasService {
           resultadoOrdenado2[i] = {...resultadoOrdenado2[i], coincidencias: fichasList[i].coincidencias};
         }
 
+        // Ordenar el array por la cantidad de subtitulos
+        const resultadoOrdenado = fichasList.sort((a, b) => b.subtitulos - a.subtitulos);
         
-         // Ordenar el array por la cantidad de subtitulos
-       const resultadoOrdenado = fichasList.sort((a, b) => b.subtitulos - a.subtitulos);
-        
-      //  return {resultadoOrdenado}
-       // Obtener el total de resultadoscarlos
-       const total = resultadoOrdenado.length;
-       const skip = (Number(page) - 1) * Number(limit);
+        //  return {resultadoOrdenado}
+        // Obtener el total de resultadoscarlos
+        const total = resultadoOrdenado.length;
+        const skip = (Number(page) - 1) * Number(limit);
         const limite = skip + Number(limit);
  
-       // Paginar los resultados
-       const resultadosPaginados = resultadoOrdenado.slice(skip, limite);
+        // Paginar los resultados
+        const resultadosPaginados = resultadoOrdenado.slice(skip, limite);
         // estos es lo nuevo
-       return { data: resultadosPaginados, total };
+        return { data: resultadosPaginados, total };
 
       } else {
         year = '/' + year;
@@ -512,10 +346,104 @@ export class ProgramasService {
     }
   }
 
+  async findFichasByProgramaAndYearNew(usuario: Usuario, id: string, year: string, page: number, limit: number, orden: 'ASC' | 'DESC', criterioOrden: 'alfabetico' | 'fecha', palabraClave: string) {
+    
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
 
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, usuarioId: usuario.id };
+
+    let criterio = criterioOrden === 'alfabetico' ? 'codigoArchivo' : 'fechaEmision';
+
+    const programa = await this.programaRepository.findOne({ where: querySearch });
+
+    if(palabraClave === ''){
+      if (year.length !== 4) {
+        year = "";
+
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: year },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      } else {
+        year = '/' + year;
+        const [fichas, total] = await this.fichaRepository.findAndCount({
+          where: { programa: programa, fechaEmision: Like(`%${year}`) },
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [criterio]: orden }
+        });
+        return {
+          data: fichas,
+          total
+        };
+      }
+    }else{
+      palabraClave = palabraClave.trim();
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
+
+      const yearQuery = year.length === 4 ? Like(`%${year}`) : "" 
+
+      // 1. Obtener las fichas filtradas por programa y año
+      const [fichas, totalTemp] = await this.fichaRepository.findAndCount({
+        where: { programa: programa, fechaEmision: yearQuery },
+        order: { [criterio]: orden },
+        // skip: (page - 1) * limit,
+        // take: limit,
+      })  
+
+      // 2. Obtener los IDs de las fichas
+      const fichasIds = fichas.map((ficha) => ficha.clavePrincipal) 
+
+      // 3. Consultar subtítulos y créditos en paralelo
+      const [subtitulos, creditos] = await Promise.all([
+        this.subtituloRepository.createQueryBuilder("subtitulo").where("subtitulo.id_ficha IN (:...fichasIds)", { fichasIds }).andWhere("to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)", {palabraClave}).getMany(),
+        this.creditoRepository.createQueryBuilder("credito").where("credito.id_ficha IN (:...fichasIds)", { fichasIds }).andWhere("to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)", {palabraClave}).getMany(),
+      ])  
+
+      // 4. Mapear resultados de subtítulos y créditos a las fichas correspondientes
+      const resultados = fichas.map((ficha) => {
+        const subtitulosFicha = subtitulos.filter(
+          (subtitulo) => subtitulo.id_ficha === ficha.clavePrincipal
+        );
+        const creditosFicha = creditos.filter(
+          (credito) => credito.id_ficha === ficha.clavePrincipal
+        ) 
+
+        return {
+          ...ficha,
+          coincidencias: subtitulosFicha.length + creditosFicha.length, // Contar coincidencias
+        };
+      })  
+
+      //filterout fichas sin coincidencias
+      const fichasConCoincidencias = resultados.filter((ficha) => ficha.coincidencias > 0)
+
+      // 5. Ordenar por coincidencias (subtítulos + créditos)
+      const resultadosOrdenados = fichasConCoincidencias.sort((a, b) => b.coincidencias - a.coincidencias)  
+
+      // 6. Paginar los resultados
+      const total = resultadosOrdenados.length;
+      const skip = (Number(page) - 1) * Number(limit);
+      const resultadosPaginados = resultadosOrdenados.slice(skip, skip + Number(limit))  
+
+      // 7. Devolver los resultados paginados
+      return { data: resultadosPaginados, total };
+    }
+  }
 
 
   async findByFiltros(
+    usuario: Usuario,
     filtros: FiltrosProgramaDto,
     page: number,
     limit: number,
@@ -704,17 +632,29 @@ export class ProgramasService {
  
    }*/
 
-  async buscarConFiltros(programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number, ids: string[]): Promise<any> {
+  async buscarConFiltros(usuario: Usuario, programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number, ids: string[]): Promise<any> {
+
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
 
     if (palabraClave !== '') {
+      palabraClave = palabraClave.trim();
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
     }
 
-    const programaQuery = this.programaRepository.createQueryBuilder('programa');
+    let programaQuery = this.programaRepository.createQueryBuilder('programa');
+
+    if(usuario.rol !== 'admin') {
+      programaQuery.where('programa.usuarioId = :usuarioId', { usuarioId: usuario.id });
+    }
+
+
     if (ids.length == 0) {
       if (programaFiltros) {
         for (const key in programaFiltros) {
@@ -831,6 +771,180 @@ export class ProgramasService {
   }
 
 
+  async buscarConFiltrosNew(usuario: Usuario, programaFiltros: any, fichaFiltros: any, palabraClave: string, pagina: number, tamanoPagina: number, ids: string[]): Promise<any> {
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.')
+    }
+
+    const skip = (Number(pagina) - 1) * Number(tamanoPagina);
+    const limit = skip + Number(tamanoPagina);
+
+    if (palabraClave !== '') {
+      palabraClave = palabraClave.trim();
+      const palabras = palabraClave.split(" ");
+      const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
+      palabraClave = fraseFormateada;
+    }
+
+    try {
+      
+      let programaQuery = this.programaRepository.createQueryBuilder('programa');
+  
+      if(usuario.rol !== 'admin') {
+        programaQuery.where('programa.usuarioId = :usuarioId', { usuarioId: usuario.id });
+      }
+
+      if (ids.length === 0 && programaFiltros) {
+        for (const key in programaFiltros) {
+          if (key === 'titulo') {
+            programaQuery.andWhere(`programa.${key} ILIKE :${key}`, { [key]: `%${programaFiltros[key]}%` });
+          } else {
+            programaQuery.andWhere(`programa.${key} = :${key}`, { [key]: programaFiltros[key] });
+          }
+        }
+      } else if (ids.length > 0) {
+        programaQuery.where('programa.clavePrincipal IN (:...ids)', { ids });
+      }
+  
+      const programas = await programaQuery.select('programa.clavePrincipal').getMany();
+  
+      if (programas.length === 0) {
+        return { resultados: [], total: 0 };
+      }
+
+      const programaIds = programas.map(programa => programa.clavePrincipal);
+
+      // Consulta de fichas
+      let fichaQuery = this.fichaRepository.createQueryBuilder('ficha').where('ficha.id_programa IN (:...programaIds)', { programaIds });
+
+      if (fichaFiltros) {
+        for (const key in fichaFiltros) {
+          fichaQuery.andWhere(`ficha.${key} = :${key}`, { [key]: fichaFiltros[key] });
+        }
+      }
+
+      const fichas = await fichaQuery.select('ficha.clavePrincipal').getMany();
+
+      if (fichas.length === 0) {
+        return { resultados: [], total: 0 };
+      }
+
+      const fichaIds = fichas.map(ficha => ficha.clavePrincipal);
+      // console.log(fichaIds);
+      if (!palabraClave) {
+        // Caso sin palabra clave
+        const resultados = await this.obtenerResultadosSinPalabraClave(fichaIds, skip, limit);
+        return resultados;
+      }
+
+      // Caso con palabra clave
+      const resultados = await this.obtenerResultadosConPalabraClave(fichaIds, palabraClave, skip, limit);
+      return resultados;
+    } catch (error) {
+      console.error('Error en la búsqueda:', error);
+      throw new Error('Error al procesar la búsqueda');
+    }
+
+  }
+
+  private async obtenerResultadosSinPalabraClave(fichaIds: string[], skip: number, limit: number): Promise<any> {
+    const fichaQuery = this.fichaRepository.createQueryBuilder('ficha')
+      .leftJoinAndSelect('ficha.programa', 'programa')
+      .where('ficha.clavePrincipal IN (:...fichaIds)', { fichaIds })
+      .orderBy('ficha.id_programa', 'ASC')
+      .skip(skip)
+      .take(limit);
+  
+    const fichas = await fichaQuery.getMany();
+  
+    const agrupado: { [key: string]: { programa: Programa, fichas: Ficha[] } } = fichas.reduce((acumulador, ficha) => {
+      const programaId = ficha.programa.clavePrincipal;
+      if (!acumulador[programaId]) {
+        acumulador[programaId] = { programa: ficha.programa, fichas: [ficha] };
+      } else {
+        acumulador[programaId].fichas.push(ficha);
+      }
+      return acumulador;
+    }, {});
+  
+    const resultadoArray = Object.values(agrupado).sort((a, b) => b.fichas.length - a.fichas.length) as { programa: Programa, fichas: Ficha[] }[];
+    const total = resultadoArray.length;
+  
+    return { resultados: resultadoArray, total };
+  }
+  
+  private async obtenerResultadosConPalabraClave(fichaIds: string[], palabraClave: string, skip: number, limit: number): Promise<any> {
+
+    if (fichaIds.length === 0) {
+      return { resultados: [], total: 0 };
+    }
+
+    const subtituloQuery = this.subtituloRepository.createQueryBuilder('subtitulo')
+      .where('subtitulo.id_ficha IN (:...fichaIds)', { fichaIds })
+      .andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+  
+    const creditosQuery = this.creditoRepository.createQueryBuilder('credito')
+      .where('credito.id_ficha IN (:...fichaIds)', { fichaIds })
+      .andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave });
+  
+    const [subtitulos, creditos] = await Promise.all([subtituloQuery.getMany(), creditosQuery.getMany()]);
+  
+    const resultadosSubtitulos = subtitulos.map(subtitulo => ({
+      fichaId: subtitulo.id_ficha,
+      subtitulo
+    }));
+  
+    const resultadosCreditos = creditos.map(credito => ({
+      fichaId: credito.id_ficha,
+      credito
+    }));
+  
+    const resultadosCombinados = [...resultadosSubtitulos, ...resultadosCreditos];
+  
+    const fichasUnicas = Array.from(new Set(resultadosCombinados.map(r => r.fichaId)));
+
+    // Verificar si no hay fichas únicas para buscar
+    if (fichasUnicas.length === 0) {
+      return { resultados: [], total: 0 };
+    }
+  
+    const fichasQuery = this.fichaRepository.createQueryBuilder('ficha')
+      .leftJoinAndSelect('ficha.programa', 'programa')
+      .where('ficha.clavePrincipal IN (:...fichaIds)', { fichaIds: fichasUnicas })
+      .orderBy('ficha.id_programa', 'ASC')
+      .skip(skip)
+      .take(limit);
+  
+    const fichas = await fichasQuery.getMany();
+  
+    const agrupado: { [key: string]: { programa: Programa, fichas: Ficha[], subtitulos: Subtitulo[], creditos: Credito[] } } = fichas.reduce((acumulador, ficha) => {
+      const programaId = ficha.programa.clavePrincipal;
+      if (!acumulador[programaId]) {
+        acumulador[programaId] = { programa: ficha.programa, fichas: [ficha], subtitulos: [], creditos: [] };
+      } else {
+        acumulador[programaId].fichas.push(ficha);
+      }
+      return acumulador;
+    }, {});
+  
+    resultadosCombinados.forEach(resultado => {
+      const ficha = fichas.find(f => f.clavePrincipal === resultado.fichaId);
+      if (ficha) {
+        const programaId = ficha.programa.clavePrincipal;
+        if ('subtitulo' in resultado) {
+          agrupado[programaId].subtitulos.push(resultado.subtitulo);
+        }
+        if ('credito' in resultado) {
+          agrupado[programaId].creditos.push(resultado.credito);
+        }
+      }
+    });
+  
+    const resultadoArray = Object.values(agrupado).sort((a, b) => (b.subtitulos.length + b.creditos.length) - (a.subtitulos.length + a.creditos.length));
+    const total = resultadoArray.length;
+  
+    return { resultados: resultadoArray, total };
+  }
 
 
 
@@ -924,18 +1038,32 @@ export class ProgramasService {
 
     return { resultados: resultadosPaginados, total };
   }*/
-  async buscarFichasConFiltros(programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
+  async buscarFichasConFiltros(usuario: Usuario, programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
+
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    const programaQuery = usuario.rol === 'admin' ? { clavePrincipal: programaId } : { clavePrincipal: programaId, usuarioId: usuario.id };
 
     const skip = (Number(pagina) - 1) * Number(tamanoPagina);
     const limit = skip + Number(tamanoPagina);
 
     if (palabraClave !== '') {
+      palabraClave = palabraClave.trim();
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
     }
 
-    const programa = await this.programaRepository.findOne({ where: { clavePrincipal: programaId } });
+    const programa = await this.programaRepository.findOne({ where: programaQuery });
+
+    if(!programa){
+      return {
+        resultados: [],
+        total: 0
+      };
+    }
 
     const fichaQuery = this.fichaRepository.createQueryBuilder('ficha');
     fichaQuery.where('ficha.id_programa = :programaId', { programaId });
@@ -1013,9 +1141,100 @@ export class ProgramasService {
   }
 
 
+  async buscarFichasConFiltrosNew(usuario: Usuario, programaId: string, filtrosFicha: any, palabraClave: string, pagina: number, tamanoPagina: number): Promise<any> {
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+  
+    const skip = (Number(pagina) - 1) * Number(tamanoPagina);
+    const limit = Number(tamanoPagina);
+
+    try {
+      // Formatear palabra clave si existe
+      let fraseFormateada = '';
+      if (palabraClave) {
+        palabraClave = palabraClave.trim();
+        const palabras = palabraClave.split(' ');
+        fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(' & ');
+      } else {
+        return { resultados: [], total: 0 }; // Sin palabra clave, no hay coincidencias
+      }
+
+      // Verificar si el programa existe
+      const programaQuery = usuario.rol === 'admin'
+        ? { clavePrincipal: programaId }
+        : { clavePrincipal: programaId, usuarioId: usuario.id };
+
+      const programa = await this.programaRepository.findOne({ where: programaQuery });
+      if (!programa) {
+        return { resultados: [], total: 0 };
+      }
+
+      // Obtener todas las fichas asociadas al programa
+      const fichaQuery = this.fichaRepository.createQueryBuilder('ficha')
+        .where('ficha.id_programa = :programaId', { programaId });
+
+      const fichas = await fichaQuery.getMany();
+
+      if (fichas.length === 0) {
+        return { resultados: [], total: 0 };
+      }
+
+      // Extraer IDs de fichas para filtrar subtítulos y créditos
+      const fichaIds = fichas.map(ficha => ficha.clavePrincipal);
+
+      // Buscar subtítulos y créditos que coincidan con la palabra clave
+      const subtitulosQuery = this.subtituloRepository.createQueryBuilder('subtitulo')
+        .where('subtitulo.id_ficha IN (:...fichaIds)', { fichaIds })
+        .andWhere('to_tsvector(subtitulo.texto::text) @@ to_tsquery(:palabraClave)', { palabraClave: fraseFormateada });
+
+      const creditosQuery = this.creditoRepository.createQueryBuilder('credito')
+        .where('credito.id_ficha IN (:...fichaIds)', { fichaIds })
+        .andWhere('to_tsvector(credito.persona_ts::text) @@ to_tsquery(:palabraClave)', { palabraClave: fraseFormateada });
+
+      const [subtitulos, creditos] = await Promise.all([subtitulosQuery.getMany(), creditosQuery.getMany()]);
+
+      // Filtrar fichas que tienen coincidencias en subtítulos o créditos
+      const fichaIdsConCoincidencias = [
+        ...new Set([
+          ...subtitulos.map(subtitulo => subtitulo.id_ficha),
+          ...creditos.map(credito => credito.id_ficha)
+        ])
+      ];
+
+      if (fichaIdsConCoincidencias.length === 0) {
+        return { resultados: [], total: 0 };
+      }
+
+      // Consultar las fichas correspondientes a los IDs encontrados
+      const fichasConCoincidenciasQuery = this.fichaRepository.createQueryBuilder('ficha')
+        .where('ficha.clavePrincipal IN (:...fichaIdsConCoincidencias)', { fichaIdsConCoincidencias })
+        .skip(skip)
+        .take(limit);
+
+      const [fichasConCoincidencias, total] = await fichasConCoincidenciasQuery.getManyAndCount();
+
+      // Mapear resultados para incluir subtítulos y créditos relacionados
+      const resultados = await Promise.all(fichasConCoincidencias.map(async ficha => {
+        const subt = subtitulos.filter(subtitulo => subtitulo.id_ficha === ficha.clavePrincipal);
+        const cred = creditos.filter(credito => credito.id_ficha === ficha.clavePrincipal);
+        return {
+          ficha,
+          subtitulos: subt,
+          creditos: cred
+        };
+      }));
+
+      return { resultados, total };
+    } catch (error) {
+      console.log('Error en la busqueda:', error)
+      throw new Error('Error al procesar la búsqueda');
+    }
+  }
 
 
-  async subirImagen(file: Express.Multer.File, id: string) {
+
+  async subirImagen(usuario: Usuario, file: Express.Multer.File, id: string) {
 
     const programa = await this.programaRepository.findOne({ where: { clavePrincipal: id } });
 

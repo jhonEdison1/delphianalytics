@@ -31,7 +31,13 @@ export class UsuariosService {
     await this.usuarioRepository.save(defaultUser);
   }
 
-
+  async create(CreateUsuarioDto: CreateUsuarioDto){
+    const usuario = new Usuario();
+    usuario.email = CreateUsuarioDto.email;
+    usuario.password = await this.hashingService.hash(CreateUsuarioDto.password);
+    usuario.rol = CreateUsuarioDto.rol;
+    return this.usuarioRepository.save(usuario);
+  }
 
 
 }

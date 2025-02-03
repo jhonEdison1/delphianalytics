@@ -12,8 +12,6 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe(
     {
-      //whitelist: true,
-      //forbidNonWhitelisted: true,
       transformOptions: {
         enableImplicitConversion: true,
       }
@@ -27,7 +25,8 @@ async function bootstrap() {
 
   SwaggerModule.setup('docs', app, document);
 
-  console.log('Api Corriendo correctamente',process.env.NODE_ENV) 
-  await app.listen(4000);
+  const PORT = process.env.PORT || 4000;
+  console.log('Api Corriendo correctamente', PORT) 
+  await app.listen(PORT);
 }
 bootstrap();

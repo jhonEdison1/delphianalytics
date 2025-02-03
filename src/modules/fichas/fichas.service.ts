@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateFichaDto } from './dto/create-ficha.dto';
 import { UpdateFichaDto } from './dto/update-ficha.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import {CsvConverter} from 'src/utils/csv.converter';
 import { Subtitulo } from '../subtitulos/entities/subtitulo.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { Credito } from '../creditos/entities/credito.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
 
 
 
@@ -22,6 +23,18 @@ export class FichasService {
     @InjectRepository(Tag) private tagRepository: Repository<Tag>,
   ) { }
 
+  
+
+  async create(createFichaDto: CreateFichaDto) {
+    const ficha = this.fichaRepository.create(createFichaDto);
+    try {
+      await this.fichaRepository.save(ficha);
+      return { message: 'Ficha creada correctamente', ficha };
+    } catch (error) {
+      console.log(error);
+      return handleDbError(error);
+    }
+  }
 
   async procesarArchivo(fileBuffer: Buffer) {
     try {
@@ -76,9 +89,16 @@ export class FichasService {
 
   }
 
-  async getFichasPaginated(page: number, limit: number) {
+  async getFichasPaginated(usuario: Usuario, page: number, limit: number) {
+
+      if(!usuario){
+        throw new UnauthorizedException('El usuario no existe.');
+      }
+
+      const querySearch = usuario.rol === 'admin' ? {} : { programa: { usuarioId: usuario.id } }
       
       const [fichas, total] = await this.fichaRepository.findAndCount({
+        where: querySearch,
         skip: (page - 1) * limit,
         take: limit
       });
@@ -92,18 +112,28 @@ export class FichasService {
   }
 
 
-  async findOne(id: string, page: number, limit: number) {
+  async findOne(usuario: Usuario, id: string, page: number, limit: number) {
 
-    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+    if(!usuario){
+      throw new UnauthorizedException('El usuario no existe.');
+    }
 
-    const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.findAndCount({ 
-      where: { ficha: ficha },
-      order: {
-        linea: "ASC"
-      }, 
-      skip: (page - 1) * limit,
-      take: limit
-     }))
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, programa: { usuarioId: usuario.id } }
+
+    const ficha = await this.fichaRepository.findOne({ where: querySearch });
+
+    if(!ficha){
+      throw new NotFoundException('La ficha no ha sido encontrada.');
+    }
+
+    // const [subtitulos, totalSubtitulos] = (await this.subtituloRepository.findAndCount({ 
+    //   where: { ficha: ficha },
+    //   order: {
+    //     linea: "ASC"
+    //   }, 
+    //   skip: (page - 1) * limit,
+    //   take: limit
+    //  }))
 
      const [tags, totalTags] = (await this.tagRepository.findAndCount({
       where: { ficha: ficha }
@@ -111,8 +141,8 @@ export class FichasService {
 
     return {
       ficha,
-      subtitulos,
-      totalSubtitulos,
+      // subtitulos,
+      // totalSubtitulos,
       tags,
       totalTags
     };
@@ -122,11 +152,23 @@ export class FichasService {
 
 
 
-  async buscarPalabraEnFicha(id: string, palabraClave:string, page:number, limit:number){
+  async buscarPalabraEnFicha(usuario: Usuario, id: string, palabraClave:string, page:number, limit:number){
 
-    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+    if(!usuario){
+      throw new UnauthorizedException('El usuario no existe.');
+    }
 
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, programa: { usuarioId: usuario.id } }
+
+    const ficha = await this.fichaRepository.findOne({ where: querySearch });
+
+    if(!ficha){
+      throw new NotFoundException('La ficha no ha sido encontrada.');
+    }
+    
     if(palabraClave !== ''){
+      //delete blank spaces at the beginning and end of the string
+      palabraClave = palabraClave.trim();
       const palabras = palabraClave.split(" ");
       const fraseFormateada = palabras.map(palabra => `'${palabra}'`).join(" & ");
       palabraClave = fraseFormateada;
@@ -166,8 +208,19 @@ export class FichasService {
   }
 
 
-  async getSubtitulos(id: string) {
-    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+  async getSubtitulos(usuario: Usuario, id: string) {
+
+    if(!usuario){
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, programa: { usuarioId: usuario.id } }
+
+    const ficha = await this.fichaRepository.findOne({ where: querySearch });
+
+    if(!ficha){
+      throw new NotFoundException('La ficha no ha sido encontrada.');
+    }
 
     const subtitulos = await this.subtituloRepository.find({ 
       where: { ficha: ficha },
@@ -179,8 +232,19 @@ export class FichasService {
     return subtitulos;
   }
   
-  async getCreditos(id: string) {
-    const ficha = await this.fichaRepository.findOne({ where: { clavePrincipal: id} });
+  async getCreditos(usuario: Usuario, id: string) {
+
+    if(!usuario){
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    const querySearch = usuario.rol === 'admin' ? { clavePrincipal: id } : { clavePrincipal: id, programa: { usuarioId: usuario.id } };
+
+    const ficha = await this.fichaRepository.findOne({ where: querySearch });
+
+    if(!ficha){
+      throw new NotFoundException('La ficha no ha sido encontrada.');
+    }
 
     const creditos = await this.creditoRepository.find({ 
       where: { ficha: ficha }

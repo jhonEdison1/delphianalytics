@@ -99,9 +99,12 @@ export class SubtitulosService {
     try {
       const subtitulos = await this.getSubtitulosPorFicha(idSesion);
 
-      return {data: subtitulos.data};
+      // return {data: subtitulos.data};
 
       const mergedSubtitulos = this.mergeData(subtitulos.data);
+
+      // return {data: mergedSubtitulos};
+
 
       const entidadesSubtitulos = await Promise.all(mergedSubtitulos.map(async (subtitulo) => {
         
@@ -167,11 +170,14 @@ export class SubtitulosService {
 
     const {clavePrincipal} = await this.fichaRepository.findOne({ where: { codigoArchivo: codigoArchivo } });
     
-    const [subtitulos, total] = await this.subtituloRepository.findAndCount({ where: { id_ficha: clavePrincipal } });
+    const [subtitulos, total] = await this.subtituloRepository.findAndCount({ where: { id_ficha: clavePrincipal }, order: { linea: 'ASC' } });
 
     //eliminar atributos innecesarios
     subtitulos.forEach((subtitulo) => {
       delete subtitulo.texto;
+      delete subtitulo.textoTraducido;
+      delete subtitulo.clavePrincipal;
+      delete subtitulo.id_ficha;
     });
 
     return {

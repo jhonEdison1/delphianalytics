@@ -1,5 +1,6 @@
 
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Usuario } from "src/modules/usuarios/entities/usuario.entity";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({ name: 'programas'})
 export class Programa {
@@ -30,5 +31,12 @@ export class Programa {
     
     @Column({nullable: true})
     imagen: string;
+
+    @ManyToOne(() => Usuario, usuario => usuario.id)
+    @JoinColumn({name: 'usuarioId'})
+    usuario: Usuario;
+
+    @Column({ default: 1 })
+    usuarioId: number;
 
 }

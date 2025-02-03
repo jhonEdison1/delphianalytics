@@ -28,7 +28,7 @@ export class AuthenticationService {
             payload.password = undefined;
 
             const user = await this.authcommonService.findUserAutenticated(payload.id); 
-            user.password = undefined;
+            delete user.password
             return {
                 message: "Acceso autorizado",
                 accessToken,
@@ -50,6 +50,9 @@ export class AuthenticationService {
 
             const accesstoken = await this.authcommonService.generateJwtAccessToken(data);
             const user = await this.authcommonService.findUserAutenticated(payload.id);
+
+            delete user.password;
+
             return {
                 message: "Acceso autorizado",
                 accesstoken,
