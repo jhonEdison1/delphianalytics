@@ -83,7 +83,8 @@ export class Ficha {
     @Column()
     copyright: string;
 
-
+    @Column({ nullable: true })
+    thumbnailUrl: string;
 }
 
 // @Column()

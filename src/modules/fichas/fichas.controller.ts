@@ -128,4 +128,11 @@ export class FichasController {
   async getAllFichasData() {
     return this.fichasService.getAllFichasData();
   }
+
+  @Post('sincronizar-fichas-calidad')
+  async sincronizarFichasCalidad(
+    @Body() body: any
+  ) {
+    return this.fichasService.sinscronizarCalidadFichas(body);
+  }
 }

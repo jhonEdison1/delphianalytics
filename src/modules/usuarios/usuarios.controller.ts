@@ -19,4 +19,11 @@ export class UsuariosController {
   create(@Body() createUsuarioDto: CreateUsuarioDto) {
     return this.usuariosService.create(createUsuarioDto);
   }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthAccessGuard, RolesGuard)
+  update(@Param('id') id: string, @Body() updateUsuarioDto: any) {
+    return this.usuariosService.updateUserPassword(+id, updateUsuarioDto.password);
+  }
 }

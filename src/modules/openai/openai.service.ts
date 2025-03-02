@@ -45,4 +45,29 @@ export class OpenaiService {
             return error;
         }
     }
+
+    async resumirTexto(texto: string): Promise<any> {
+        const prompt = `Resumir el siguiente texto y obten algunas ideas princiaples. Devuelve todo en formato HTML, utilizando clases de Tailwind CSS para mejorar su presentación en una página web pero devuélvelo sin los delimitadores de bloque de código al inicio y al final ademas de no usar clases de bordes ni fondos, los titulos deberan tener la clase text-primary\n\n: ${texto}`;
+
+        try {
+            const response = await this.openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Generando resumen del texto.',
+                    },
+                    {
+                        role: 'user',
+                        content: prompt,
+                    }
+                ]
+            });
+
+            return { ok: true, resumen: response.choices[0].message.content };
+        } catch (error) {
+            return { ok: false, resumen: null, error };
+        }
+           
+    }
 }

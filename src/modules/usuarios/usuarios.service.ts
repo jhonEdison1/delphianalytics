@@ -40,4 +40,16 @@ export class UsuariosService {
   }
 
 
+  async updateUserPassword(id: number, password: string) {
+
+    try {
+      const usuario = await this.usuarioRepository.findOne({where: {id}});
+      usuario.password = await this.hashingService.hash(password);
+      await this.usuarioRepository.save(usuario);
+      return { message : 'Usuario actualizado', password };
+    } catch (error) {
+      throw new Error('Error al actualizar la contraseña');
+    }
+  }
+
 }
