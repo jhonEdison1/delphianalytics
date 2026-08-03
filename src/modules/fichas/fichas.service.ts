@@ -358,7 +358,7 @@ export class FichasService {
           return { message: 'No hay fichas para sincronizar' }
         }
 
-        const fichasActualizadas = fichas.map(ficha => this.applyFichaModifications(ficha, dataSincronizar));
+        fichas.map((ficha:any) => this.applyFichaModifications(ficha, dataSincronizar));
 
         const nuevasFichas = [];
 
@@ -372,9 +372,11 @@ export class FichasService {
           }
 
           const transcripciones = await this.procesarTranscripciones(responseTranscription.data, nuevaFicha);
-          
-          const generateSrtResponse = await this.generateAndSaveSRT(responseTranscription.data, nuevaFicha);
 
+          // const tranduccionTranscripciones = await this.translateTranscripciones(responseTranscription.data);
+          
+          const generateSrtResponse = await this.generateAndSaveSRT(responseTranscription.data, nuevaFicha, '');
+          // const generateSrtIngles = await this.generateAndSaveSRT(tranduccionTranscripciones, nuevaFicha, '_english');
           let texto = '';
 
           responseTranscription.data.map((item) => {
@@ -392,7 +394,12 @@ export class FichasService {
 
           await this.axiosService.sincronizarSesiones(ficha.id);
           
-          nuevasFichas.push({...nuevaFicha, subtitulos: transcripciones, srtFilePath: generateSrtResponse.ruta});
+          nuevasFichas.push({
+            ...nuevaFicha, 
+            subtitulos: transcripciones, 
+            srtFilePath: generateSrtResponse.ruta,
+            // srtFilePathIngles: generateSrtIngles.ruta,
+          });
         }
         
 
@@ -409,16 +416,18 @@ export class FichasService {
 
       const fechaFicha = await this.fechaFormatter(ficha.fecha);
       const nombre_ficha = this.nombreFormatter(nombreFicha, fechaFicha);
+      const codigo_archivo = this.codigoFormatter(nombreFicha);
+      const newFechaFicha = this.transformDate(fechaFicha);
 
       const nuevaFicha = new Ficha();
       nuevaFicha.clavePrincipal = randomUUID();
       nuevaFicha.nombreArchivo = `${nombre_ficha}.${ficha.tipoArchivoRecibido.toLowerCase()}`;
-      nuevaFicha.codigoArchivo = nombre_ficha;
+      nuevaFicha.codigoArchivo = codigo_archivo;
       nuevaFicha.id_programa = idPrograma;
       nuevaFicha.error = '';
       nuevaFicha.referencia = '';
-      nuevaFicha.fechaRealizacion = ficha.fechaRealizacion;
-      nuevaFicha.fechaEmision = ficha.fechaEmision;
+      nuevaFicha.fechaRealizacion = newFechaFicha;
+      nuevaFicha.fechaEmision = newFechaFicha;
       nuevaFicha.casaProductora = ficha.casaProductora;
       nuevaFicha.formato = ficha.formato;
       nuevaFicha.tipoArchivoRecibido = ficha.tipoArchivoRecibido;
@@ -436,7 +445,7 @@ export class FichasService {
       nuevaFicha.sinopsis = '';
       nuevaFicha.observaciones = '';
       nuevaFicha.copyright = '';
-      nuevaFicha.thumbnailUrl = `${nombreFicha}-thumbnail.png`
+      nuevaFicha.thumbnailUrl = `${nombre_ficha}-thumbnail.png`
 
       return nuevaFicha;
     } catch (error) {
@@ -474,6 +483,30 @@ export class FichasService {
     }
   }
 
+  async translateTranscripciones(transcripciones: any): Promise<any>  {
+    try {
+      const transcripcionesTraducidas = [];
+
+      for (const transcripcion of transcripciones) {
+        const textoCorregido = transcripcion.textoCorregido; 
+        if(textoCorregido === ''){
+          continue; 
+        }
+
+        const textoTraducido = await this.openaiService.traducirTexto(textoCorregido, 'ingles');
+
+        transcripcionesTraducidas.push({
+          ...transcripcion,
+          textoCorregido: textoTraducido.traduccion,
+        });
+      }
+
+      return transcripcionesTraducidas;
+    } catch (error) {
+      throw new Error('Error al traducir las transcripciones de la ficha');
+    }
+  }
+
   async escaparCaracteres(texto) {
     // Escapar caracteres problemáticos con \
     const caracteresProblematicos = /[\\'":!()*/?]/g;
@@ -493,9 +526,17 @@ export class FichasService {
   }
 
   nombreFormatter(nombre:any, fecha:any){
-    const temp = nombre.replace(`${fecha}-`, '');
-    return temp;
+    const regex = new RegExp(`${fecha}[-_]`, 'g');
+    return nombre.replace(regex, '');
   }
+
+  codigoFormatter(nombre: string): string {
+    // Quita el prefijo tipo "TVL-2025-05-15-" o "AT-2023-05-11_"
+    const sinPrefijo = nombre.replace(/^[A-Z]+[-_]\d{4}-\d{2}-\d{2}[-_]?/, '');
+    // Reemplaza guiones bajos por espacios
+    return sinPrefijo.replace(/_/g, ' ');
+  }
+
 
   private applyFichaModifications(ficha: Ficha, data: any) {
     ficha.fechaRealizacion = data.fechaRealizacion;
@@ -556,16 +597,18 @@ export class FichasService {
     return srtContent;
   }
 
-  private async generateAndSaveSRT(transcripciones: any, ficha:Ficha): Promise<{ message: string, ruta: string }>{
+  private async generateAndSaveSRT(transcripciones: any, ficha:Ficha, sufijo?: string): Promise<{ message: string, ruta: string }>{
     try {
       // Generar contenido del archivo SRT
       const srtContent = await this.generateSRT(transcripciones);
 
       // Crear archivo SRT
-      const fileName = `${ficha.codigoArchivo}.srt`;
+      const fileName = `${ficha.codigoArchivo}${sufijo}.srt`;
 
       // Guardar archivo SRT
-      const baseDir = '/var/www/html/assets/subtitulos';
+      // const baseDir = '/var/www/html/assets/subtitulos';
+      const baseDir = path.join(__dirname, '..', '..', '..', 'public');
+
       const uploadsDir = path.join(baseDir, ficha.id_programa.toString());
 
       await fs.mkdir(uploadsDir, { recursive: true });
@@ -578,6 +621,12 @@ export class FichasService {
       console.log(error);
       throw new Error('Error al generar el archivo SRT');
     }
+  }
+
+  private transformDate(date: string) {
+    //transform date YYYY-MM-DD to DD/MM/YYYY
+    const dateArray = date.split('-');
+    return `${dateArray[2]}/${dateArray[1]}/${dateArray[0]}`;
   }
 
 }

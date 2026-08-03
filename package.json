@@ -38,6 +38,7 @@
     "config": "^3.3.11",
     "csv-parse": "^5.5.5",
     "dotenv": "^16.4.5",
+    "freedomcenter-backend": "file:",
     "multer": "^1.4.5-lts.1",
     "openai": "^4.78.1",
     "passport": "^0.7.0",

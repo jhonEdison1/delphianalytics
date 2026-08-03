@@ -22,6 +22,7 @@ export class ProgramasService {
     @InjectRepository(Ficha) private fichaRepository: Repository<Ficha>,
     @InjectRepository(Subtitulo) private subtituloRepository: Repository<Subtitulo>,
     @InjectRepository(Credito) private creditoRepository: Repository<Credito>,
+    @InjectRepository(Usuario) private usuarioRepository: Repository<Usuario>
   ) { }
 
   async create(createProgramaDto: CreateProgramaDto) {
@@ -34,6 +35,15 @@ export class ProgramasService {
     nuevoPrograma.idioma = createProgramaDto.idioma;
     nuevoPrograma.productora = createProgramaDto.productora;
     nuevoPrograma.imagen = createProgramaDto.imagen;
+
+    const usuario = await this.usuarioRepository.findOne({ where: { id: createProgramaDto.usuarioId } });
+
+    if (!usuario) {
+      throw new UnauthorizedException('El usuario no existe.'); 
+    }
+
+    nuevoPrograma.usuario = usuario;
+
     try {
       await this.programaRepository.save(nuevoPrograma);
       return { message: 'Programa guardado correctamente', nuevoPrograma };
